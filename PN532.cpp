@@ -70,6 +70,36 @@ PN532::PN532()
 #endif
 
 /**************************************************************************
+    Initializes for hardware UART usage.
+    param  serialId  Id of the serial peripheral
+    param  baudRate  Requested baudrate
+    param  reset     The RSTPD_N pin
+**************************************************************************/
+#if USE_HARDWARE_UART
+    void PN532::InitUart(byte serialId, byte u8_Reset)
+    {
+        mu8_ResetPin = u8_Reset;
+        Utils::SetPinMode(mu8_ResetPin, OUTPUT);
+        mu8_SselPin = serialId;
+    }
+
+    HardwareSerial& PN532::GetSerial() {
+        switch (mu8_SselPin) {
+          case 0: return Serial; break;
+          #ifdef Serial1
+          case 1: return Serial1; break;
+          #endif
+          #ifdef Serial2
+          case 2: return Serial2; break;
+          #endif
+          #ifdef Serial3
+          case 3: return Serial3; break;
+          #endif
+        }
+    }
+#endif
+
+/**************************************************************************
     Initializes for software SPI usage.
     param  clk       SPI clock pin (SCK)
     param  miso      SPI MISO pin
@@ -144,6 +174,10 @@ void PN532::begin()
     #elif USE_HARDWARE_I2C
     {
         I2cClass::Begin();
+    }
+    #elif USE_HARDWARE_UART
+    {
+        GetSerial().begin(115200);
     }
     #endif
 }
@@ -644,6 +678,16 @@ bool PN532::IsReady()
         
         return u8_Ready == PN532_I2C_READY; // 0x01
     }
+    #elif USE_HARDWARE_UART
+    {
+        int available = GetSerial().available();
+        if (mu8_DebugLevel > 2)
+        {
+            Utils::Print("Avilable chars on uart ");
+            Utils::PrintDec(available, LF);
+        }
+        return available > 0;
+    }
     #endif
 }
 
@@ -752,6 +796,10 @@ void PN532::SendPacket(byte* buff, byte len)
             I2cClass::Write(buff[i]);
         }   
         I2cClass::EndTransmission();
+    }
+    #elif USE_HARDWARE_UART
+    {
+        GetSerial().write(buff, len);
     }
     #endif
 }
@@ -950,6 +998,11 @@ bool PN532::ReadPacket(byte* buff, byte len)
             Utils::DelayMilli(1);
             buff[i] = I2cClass::Read();
         }
+        return true;
+    }
+    #elif USE_HARDWARE_UART
+    {
+        GetSerial().readBytes((char*)buff, len);
         return true;
     }
     #endif

@@ -153,6 +153,9 @@ class PN532
     #if USE_HARDWARE_I2C
         void InitI2C        (byte u8_Reset);
     #endif
+    #if USE_HARDWARE_UART
+        void InitUart(byte serialId, byte u8_Reset);
+    #endif
     
     // Generic PN532 functions
     void begin();  
@@ -194,6 +197,9 @@ class PN532
     byte mu8_MosiPin;  
     byte mu8_SselPin;  
     byte mu8_ResetPin;
+    #ifdef USE_HARDWARE_UART
+    HardwareSerial& GetSerial();
+    #endif
 };
 
 #endif

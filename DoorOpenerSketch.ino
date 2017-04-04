@@ -44,17 +44,15 @@
 #define PASSWORD_TIMEOUT  5
 
 // This Arduino / Teensy pin is connected to the relay that opens the door 1
-#define DOOR_1_PIN       11
+#define DOOR_1_PIN       9
 
 // This Arduino / Teensy pin is connected to the optional relay that opens the door 2
-#define DOOR_2_PIN       12
+#define DOOR_2_PIN       10
 
 // This Arduino / Teensy pin is connected to the transistor that charges the battery
 #define CHARGE_PIN       19
 
-// This Arduino / Teensy pin is connected to the PN532 RSTPDN pin (reset the PN532)
-// When a communication error with the PN532 is detected the board is reset automatically.
-#define RESET_PIN         27
+
 // The software SPI SCK  pin (Clock)
 #define SPI_CLK_PIN       23
 // The software SPI MISO pin (Master In, Slave Out)
@@ -63,15 +61,21 @@
 #define SPI_MOSI_PIN      26
 // The software SPI SSEL pin (Chip Select)
 #define SPI_CS_PIN        24
- 
+
+// This Arduino / Teensy pin is connected to the PN532 RSTPDN pin (reset the PN532) 
+// When a communication error with the PN532 is detected the board is reset automatically.
+#define RESET_PIN         27
+
+// TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
 // The green LED flashes fast while no card is present and flashes 1 second when opening the door.
 #define LED_GREEN_PIN    39
 
+// TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the red LED in a two color LED.
 // The red LED flashes slowly when a communication error occurred with the PN532 chip and when an unauthorized person tries to open the door.
 // It flashes fast when a power failure has been detected. (Charging battery failed)
-#define LED_RED_PIN      38
+#define LED_RED_PIN      30
 
 // This Arduino / Teensy pin is connected to the voltage divider that measures the 13,6V battery voltage
 #define VOLTAGE_MEASURE_PIN  A3
@@ -178,7 +182,7 @@ void setup()
     Utils::SetPinMode(CHARGE_PIN, OUTPUT);  
     Utils::WritePin  (CHARGE_PIN, LOW);      
 
-    Utils::SetPinMode(LED_GREEN_PIN, OUTPUT);      
+    Utils::SetPinMode(LED_GREEN_PIN, OUTPUT);
     Utils::SetPinMode(LED_RED_PIN,   OUTPUT);
     Utils::SetPinMode(LED_BUILTIN,   OUTPUT);
     
@@ -192,7 +196,8 @@ void setup()
     // analogReference(INTERNAL1V5); // TODO recompute the rest of the code to the proper Tiva references
 
     // Software SPI is configured to run a slow clock of 10 kHz which can be transmitted over longer cables.
-    gi_PN532.InitSoftwareSPI(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, SPI_CS_PIN, RESET_PIN);
+    //gi_PN532.InitSoftwareSPI(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, SPI_CS_PIN, RESET_PIN);
+    gi_PN532.InitUart(1, RESET_PIN);
 
     // Open USB serial port
     SerialClass::Begin(115200);
@@ -358,11 +363,11 @@ void SetLED(eLED e_LED)
     {
         case LED_RED:   
             Utils::WritePin(LED_RED_PIN, HIGH); 
-            Utils::WritePin(LED_BUILTIN, HIGH); // LED on Teensy
+            //Utils::WritePin(LED_BUILTIN, HIGH); // LED on Teensy
             break;
         case LED_GREEN: 
             Utils::WritePin(LED_GREEN_PIN, HIGH); 
-            Utils::WritePin(LED_BUILTIN,   HIGH); // LED on Teensy
+            //Utils::WritePin(LED_BUILTIN,   HIGH); // LED on Teensy
             break;
         default:  // Just to avoid stupid gcc compiler warning
             break;
