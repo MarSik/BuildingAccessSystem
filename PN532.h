@@ -21,7 +21,7 @@
 
 // The maximum time to wait for an answer from the PN532
 // Do NOT use infinite timeouts like in Adafruit code!
-#define PN532_TIMEOUT  1000
+#define PN532_TIMEOUT  500
 
 // The packet buffer is used for sending commands and for receiving responses from the PN532
 #define PN532_PACKBUFFSIZE   80
@@ -187,9 +187,11 @@ class PN532
     bool ReadAck();
     void SpiWrite(byte c);
     byte SpiRead(void);
+    void Wakeup();
 
     byte mu8_DebugLevel;   // 0, 1, or 2
     byte mu8_PacketBuffer[PN532_PACKBUFFSIZE];
+    bool lowPower;
 
  private:
     byte mu8_ClkPin;

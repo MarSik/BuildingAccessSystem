@@ -55,6 +55,7 @@ PN532::PN532()
     mu8_MosiPin    = 0;  
     mu8_SselPin    = 0;  
     mu8_ResetPin   = 0;
+    mu8_DebugLevel = 0;
 }
 
 /**************************************************************************
@@ -86,15 +87,27 @@ PN532::PN532()
     HardwareSerial& PN532::GetSerial() {
         switch (mu8_SselPin) {
           case 0: return Serial; break;
-          #ifdef Serial1
           case 1: return Serial1; break;
-          #endif
+          
           #ifdef Serial2
           case 2: return Serial2; break;
           #endif
           #ifdef Serial3
           case 3: return Serial3; break;
           #endif
+          #ifdef Serial4
+          case 4: return Serial4; break;
+          #endif
+          #ifdef Serial5
+          case 5: return Serial5; break;
+          #endif
+          #ifdef Serial6
+          case 6: return Serial6; break;
+          #endif
+          #ifdef Serial7
+          case 7: return Serial7; break;
+          #endif
+          default: Utils::Print("!!! Unknown reader UART\n");
         }
     }
 #endif
@@ -143,33 +156,40 @@ PN532::PN532()
 /**************************************************************************
     Reset the PN532, wake up and start communication
 **************************************************************************/
+void PN532::Wakeup()
+{
+    if (!lowPower) return;
+    
+    // Wake up the PN532 (chapter 7.2.11) -> send a sequence of 0x55 (dummy bytes)
+    byte u8_Buffer[20];
+    memset(u8_Buffer, PN532_WAKEUP, sizeof(u8_Buffer));
+    SendPacket(u8_Buffer, sizeof(u8_Buffer));
+
+    if (mu8_DebugLevel > 1)
+    {
+        Utils::Print("Send WakeUp packet: ");
+        Utils::PrintHexBuf(u8_Buffer, sizeof(u8_Buffer), LF);
+    }
+}
+
 void PN532::begin() 
 {
     if (mu8_DebugLevel > 0) Utils::Print("\r\n*** begin()\r\n");
 
     Utils::WritePin(mu8_ResetPin, HIGH);
-    Utils::DelayMilli(10);
+    Utils::DelayMilli(20);
     Utils::WritePin(mu8_ResetPin, LOW);
     Utils::DelayMilli(400);
     Utils::WritePin(mu8_ResetPin, HIGH);
-    Utils::DelayMilli(10);  // Small delay required before taking other actions after reset. See datasheet section 12.23, page 209.
+    Utils::DelayMilli(20);  // Small delay required before taking other actions after reset. See datasheet section 12.23, page 209.
+
+    lowPower = true;
   
     #if (USE_HARDWARE_SPI || USE_SOFTWARE_SPI) 
     {
         #if USE_HARDWARE_SPI
             SpiClass::Begin(PN532_HARD_SPI_CLOCK);
         #endif
-
-        // Wake up the PN532 (chapter 7.2.11) -> send a sequence of 0x55 (dummy bytes)
-        byte u8_Buffer[20];
-        memset(u8_Buffer, PN532_WAKEUP, sizeof(u8_Buffer));
-        SendPacket(u8_Buffer, sizeof(u8_Buffer));
-
-        if (mu8_DebugLevel > 1)
-        {
-            Utils::Print("Send WakeUp packet: ");
-            Utils::PrintHexBuf(u8_Buffer, sizeof(u8_Buffer), LF);
-        }
     }
     #elif USE_HARDWARE_I2C
     {
@@ -681,13 +701,15 @@ bool PN532::IsReady()
     #elif USE_HARDWARE_UART
     {
         int available = GetSerial().available();
-        if (mu8_DebugLevel > 2)
+        if (mu8_DebugLevel > 2 && available > 0)
         {
-            Utils::Print("Avilable chars on uart ");
+            Utils::Print("Available chars on uart ");
             Utils::PrintDec(available, LF);
         }
         return available > 0;
     }
+    #else
+    #error "No reader device?"
     #endif
 }
 
@@ -720,6 +742,7 @@ bool PN532::WaitReady()
 **************************************************************************/
 bool PN532::SendCommandCheckAck(byte *cmd, byte cmdlen) 
 {
+    Wakeup();
     WriteCommand(cmd, cmdlen);
     return ReadAck();
 }
@@ -1002,6 +1025,7 @@ bool PN532::ReadPacket(byte* buff, byte len)
     }
     #elif USE_HARDWARE_UART
     {
+        Utils::DelayMilli(2);
         GetSerial().readBytes((char*)buff, len);
         return true;
     }

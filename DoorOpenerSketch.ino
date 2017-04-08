@@ -64,7 +64,7 @@
 
 // This Arduino / Teensy pin is connected to the PN532 RSTPDN pin (reset the PN532) 
 // When a communication error with the PN532 is detected the board is reset automatically.
-#define RESET_PIN         27
+#define RESET_PIN         10
 
 // TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
@@ -190,6 +190,10 @@ void setup()
     // has been charged before the battery voltage is measured for the first time.
     FlashLED(LED_GREEN, 1000);
 
+    // Open USB serial port
+    SerialClass::Begin(115200);
+    Utils::Print("Reader initializing\n");
+
     // Use 12 bit resolution for the analog input (ADC)
     analogReadResolution(ANALOG_RESOLUTION);
     // Use the internal reference voltage (1.5V) as analog reference
@@ -198,11 +202,10 @@ void setup()
     // Software SPI is configured to run a slow clock of 10 kHz which can be transmitted over longer cables.
     //gi_PN532.InitSoftwareSPI(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, SPI_CS_PIN, RESET_PIN);
     gi_PN532.InitUart(1, RESET_PIN);
-
-    // Open USB serial port
-    SerialClass::Begin(115200);
-
+    Utils::Print("UART reader port initialized\n");
+    
     InitReader(false);
+    Utils::Print("Reader initialized\n");
 
     #if USE_DESFIRE
         gi_PiccMasterKey.SetKeyData(SECRET_PICC_MASTER_KEY, sizeof(SECRET_PICC_MASTER_KEY), CARD_KEY_VERSION);
