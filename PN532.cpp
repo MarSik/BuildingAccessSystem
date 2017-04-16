@@ -422,9 +422,9 @@ bool PN532::ReadPassiveTargetID(byte* u8_UidBuffer, byte* pu8_UidLength, eCardTy
     if (mu8_DebugLevel > 0)
     {
         Utils::Print("Cards found: "); 
-        Utils::PrintDec(cardsFound, LF); 
+        Utils::PrintDec(cardsFound, LF);
     }
-    if (cardsFound != 1)
+    if (cardsFound < 1)
         return true; // no card found -> this is not an error!
 
     byte u8_IdLength = mu8_PacketBuffer[7];

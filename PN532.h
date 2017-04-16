@@ -21,7 +21,7 @@
 
 // The maximum time to wait for an answer from the PN532
 // Do NOT use infinite timeouts like in Adafruit code!
-#define PN532_TIMEOUT  500
+#define PN532_TIMEOUT  1000
 
 // The packet buffer is used for sending commands and for receiving responses from the PN532
 #define PN532_PACKBUFFSIZE   80
