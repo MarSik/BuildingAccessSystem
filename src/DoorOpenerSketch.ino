@@ -8,34 +8,6 @@
 
 **************************************************************************/
 
-// This is the most important switch: It defines if you want to use Mifare Classic or Desfire EV1 cards.
-// If you set this define to false the users will only be identified by the UID of a Mifare Classic or Desfire card.
-// This mode is only for testing if you have no Desfire cards available.
-// Mifare Classic cards have been cracked due to a badly implemented encryption. 
-// It is easy to clone a Mifare Classic card (including it's UID).
-// You should use Defire EV1 cards for any serious door access system.
-// When using Desfire EV1 cards a 16 byte data block is stored in the card's EEPROM memory that can only be read with the application master key.
-// To clone a Desfire card it would be necessary to crack a 168 bit 3K3DES or a 128 bit AES key data which is impossible.
-// If the Desfire card does not contain the correct data the door will not open even if the UID is correct.
-// IMPORTANT: After changing this compiler switch, please execute the CLEAR command!
-#define USE_DESFIRE   true
-
-// This compiler switch defines if you use AES (128 bit) or DES (168 bit) for the PICC master key and the application master key.
-// Cryptographers say that AES is better.
-// But the disadvantage of AES encryption is that it increases the power consumption of the card more than DES.
-// The maximum read distance is 5,3 cm when using 3DES keys and 4,0 cm when using AES keys.
-// (When USE_DESFIRE == false the same Desfire card allows a distance of 6,3 cm.)
-// If the card is too far away from the antenna you get a timeout error at the moment when the Authenticate command is executed.
-// IMPORTANT: Before changing this compiler switch, please execute the RESTORE command on all personalized cards!
-#define USE_AES   false
-
-// This define should normally be zero
-// If you want to run the selftest (only available if USE_DESFIRE == true) you must set this to a value > 0.
-// Then you can enter TEST into the terminal to execute a selftest that tests ALL functions in the Desfire class.
-// The value that you can specify here is 1 or 2 which will be the debug level for the selftest.
-// At level 2 you see additionally the CMAC and the data sent to and received from the card.
-#define COMPILE_SELFTEST  0
-
 // This password will be required when entering via Terminal
 // If you define an empty string here, no password is requested.
 // If any unauthorized person may access the dooropener hardware phyically you should provide a password!
@@ -121,25 +93,6 @@
     #warning "This code has not been tested on any other board than Teensy 3.1 / 3.2"
 #endif
 
-#if USE_DESFIRE
-    #if USE_AES
-        #define DESFIRE_KEY_TYPE   AES
-        #define DEFAULT_APP_KEY    gi_PN532.AES_DEFAULT_KEY
-    #else
-        #define DESFIRE_KEY_TYPE   DES
-        #define DEFAULT_APP_KEY    gi_PN532.DES3_DEFAULT_KEY
-    #endif
-    
-    #include "Desfire.h"
-    #include "Secrets.h"
-    #include "Buffer.h"
-    Desfire          gi_PN532; // The class instance that communicates with Mifare Desfire cards   
-    DESFIRE_KEY_TYPE gi_PiccMasterKey;
-#else
-    #include "Classic.h"
-    Classic          gi_PN532; // The class instance that communicates with Mifare Classic cards
-#endif
-
 #include "UserManager.h"
 
 // The tick counter starts at zero when the CPU is reset.
@@ -152,14 +105,6 @@ enum eLED
     LED_OFF,
     LED_RED,
     LED_GREEN,
-};
-
-struct kCard
-{
-    byte     u8_UidLength;   // UID = 4 or 7 bytes
-    byte     u8_KeyVersion;  // for Desfire random ID cards
-    bool      b_PN532_Error; // true -> the error comes from the PN532, false -> crypto error
-    eCardType e_CardType;    
 };
 
 // global variables
@@ -199,17 +144,10 @@ void setup()
     // Use the internal reference voltage (1.5V) as analog reference
     // analogReference(INTERNAL1V5); // TODO recompute the rest of the code to the proper Tiva references
 
-    // Software SPI is configured to run a slow clock of 10 kHz which can be transmitted over longer cables.
-    //gi_PN532.InitSoftwareSPI(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, SPI_CS_PIN, RESET_PIN);
-    gi_PN532.InitUart(1, RESET_PIN);
     Utils::Print("UART reader port initialized\n");
     
     InitReader(false);
     Utils::Print("Reader initialized\n");
-
-    #if USE_DESFIRE
-        gi_PiccMasterKey.SetKeyData(SECRET_PICC_MASTER_KEY, sizeof(SECRET_PICC_MASTER_KEY), CARD_KEY_VERSION);
-    #endif
 }
 
 void loop()
@@ -246,6 +184,7 @@ void loop()
         kCard k_Card;
         if (!ReadCard(k_User.ID.u8, &k_Card))
         {
+            /* XXX
             if (IsDesfireTimeout())
             {
                 // Nothing to do here because IsDesfireTimeout() prints additional error message and blinks the red LED
@@ -258,13 +197,14 @@ void loop()
             {
                 FlashLED(LED_RED, 1000);
             }
+            */
             
             Utils::Print("> ");
             break;
         }
 
-        // No card present in the RF field
-        if (k_Card.u8_UidLength == 0) 
+        // XXX No card present in the RF field
+        if (1) 
         {
             gu64_LastID = 0;
     
@@ -287,7 +227,7 @@ void loop()
     // Turn off the RF field to save battery
     // When the RF field is on,  the PN532 board consumes approx 110 mA.
     // When the RF field is off, the PN532 board consumes approx 18 mA.
-    gi_PN532.SwitchOffRfField();
+    // XXX gi_PN532.SwitchOffRfField();
 
     u64_LastRead = Utils::GetMillis64();
 }
@@ -306,13 +246,16 @@ void InitReader(bool b_ShowError)
     {
         gb_InitSuccess = false;
       
-        // Reset the PN532
+        // XXX Reset the PN532
         gi_PN532.begin(); // delay > 400 ms
     
         byte IC, VersionHi, VersionLo, Flags;
+        
+        /* XXX
         if (!gi_PN532.GetFirmwareVersion(&IC, &VersionHi, &VersionLo, &Flags))
             break;
-    
+        */    
+
         char Buf[80];
         sprintf(Buf, "Chip: PN5%02X, Firmware version: %d.%d\r\n", IC, VersionHi, VersionLo);
         Utils::Print(Buf);
@@ -321,14 +264,8 @@ void InitReader(bool b_ShowError)
                                                                                 (Flags & 4) ? "Yes" : "No");
         Utils::Print(Buf);
          
-        // Set the max number of retry attempts to read from a card.
-        // This prevents us from waiting forever for a card, which is the default behaviour of the PN532.
-        if (!gi_PN532.SetPassiveActivationRetries())
-            break;
-        
-        // configure the PN532 to read RFID tags
-        if (!gi_PN532.SamConfig())
-            break;
+        // XXX Set the max number of retry attempts to read from a card.
+        // XXX configure the PN532 to read RFID tags
     
         gb_InitSuccess = true;
     }
@@ -505,7 +442,6 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-        #if USE_DESFIRE
             if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
             {
                 if (RestoreDesfireCard()) Utils::Print("Restore success\r\n");
@@ -522,18 +458,6 @@ void OnCommandReceived(bool b_PasswordValid)
                 return;
             }
 
-            #if COMPILE_SELFTEST > 0
-                if (stricmp(gs8_CommandBuffer, "TEST") == 0)
-                {
-                    gi_PN532.SetDebugLevel(COMPILE_SELFTEST);
-                    if (gi_PN532.Selftest()) Utils::Print("\r\nSelftest success\r\n");
-                    else                     Utils::Print("\r\nSelftest failed\r\n");
-                    gi_PN532.SetDebugLevel(0);
-                    gi_PN532.SwitchOffRfField();
-                    return;
-                }
-            #endif
-        #endif
     
         if (strnicmp(gs8_CommandBuffer, "ADD", 3) == 0)
         {
@@ -602,13 +526,8 @@ void OnCommandReceived(bool b_PasswordValid)
         Utils::Print(" DOOR2  {user}  : Open only door 2 for this user\r\n");
         Utils::Print(" DOOR12 {user}  : Open both doors for this user\r\n");
         
-        #if USE_DESFIRE
             Utils::Print(" RESTORE        : Removes the master key and the application from the card\r\n");
             Utils::Print(" MAKERANDOM     : Converts the card into a Random ID card (FOREVER!)\r\n");
-            #if COMPILE_SELFTEST > 0
-                Utils::Print(" TEST           : Execute the selftest (requires an empty Desfire EV1 card)\r\n");
-            #endif
-        #endif
     }
     else // !gb_InitSuccess
     {
@@ -623,16 +542,7 @@ void OnCommandReceived(bool b_PasswordValid)
     if (PASSWORD[0] != 0)
         Utils::Print(" EXIT           : Log out\r\n");
     Utils::Print(LF);
-
-    #if USE_DESFIRE
-        #if USE_AES
-            Utils::Print("Compiled for Desfire EV1 cards (AES - 128 bit encryption used)\r\n");
-        #else
-            Utils::Print("Compiled for Desfire EV1 cards (3K3DES - 168 bit encryption used)\r\n");
-        #endif
-    #else
-        Utils::Print("Compiled for Mifare Classic cards (not recommended, use only for testing)\r\n");
-    #endif
+    Utils::Print("Compiled for Ultralight C cards (3K3DES - 168 bit encryption used)\r\n");
 
     int s32_MaxUsers = UserManager::GetMaxUsers();
     char Buf[80];
@@ -835,38 +745,16 @@ bool ReadCard(byte u8_UID[8], kCard* pk_Card)
 
     if (pk_Card->e_CardType == CARD_DesRandom) // The card is a Desfire card in random ID mode
     {
-        #if USE_DESFIRE
-            if (!AuthenticatePICC(&pk_Card->u8_KeyVersion))
-                return false;
-        
-            // replace the random ID with the real UID
-            if (!gi_PN532.GetRealCardID(u8_UID))
-                return false;
-
-            pk_Card->u8_UidLength = 7; // random ID is only 4 bytes
-        #else
-            Utils::Print("Cards with random ID are not supported in Classic mode.\r\n");
-            return false;    
-        #endif
+        Utils::Print("Cards with random ID are not supported in Classic mode.\r\n");
+        return false;    
     }
     return true;
 }
 
 // returns true if the cause of the last error was a Timeout.
-// This may happen for Desfire cards when the card is too far away from the reader.
+// XXX This may happen for Desfire cards when the card is too far away from the reader.
 bool IsDesfireTimeout()
 {
-    #if USE_DESFIRE
-        // For more details about this error see comment of GetLastPN532Error()
-        if (gi_PN532.GetLastPN532Error() == 0x01) // Timeout
-        {
-            Utils::Print("A Timeout mostly means that the card is too far away from the reader.\r\n");
-            
-            // In this special case we make a short pause only because someone tries to open the door -> don't let him wait unnecessarily.
-            FlashLED(LED_RED, 200);
-            return true;
-        }
-    #endif
     return false;
 }
 
@@ -882,50 +770,7 @@ void OpenDoor(uint64_t u64_ID, kCard* pk_Card, uint64_t u64_StartTick)
         return;
     }
 
-    #if USE_DESFIRE
-        if ((pk_Card->e_CardType & CARD_Desfire) == 0)
-        {
-            Utils::Print("The card is not a Desfire card.\r\n");
-            FlashLED(LED_RED, 1000);
-            return;
-        }
-
-        if (pk_Card->e_CardType == CARD_DesRandom) // random ID Desfire card
-        {
-            // In case of a random ID card the authentication has already been done in ReadCard().
-            // But ReadCard() may also authenticate with the factory default DES key, so we must check here 
-            // that SECRET_PICC_MASTER_KEY has been used for authentication.
-            if (pk_Card->u8_KeyVersion != CARD_KEY_VERSION)
-            {
-                Utils::Print("The card is not personalized.\r\n");
-                FlashLED(LED_RED, 1000);
-                return;
-            }
-        }
-        else // default Desfire card
-        {
-            if (!CheckDesfireSecret(&k_User))
-            {
-                if (IsDesfireTimeout()) // Prints additional error message and blinks the red LED
-                    return;
-    
-                Utils::Print("The card is not personalized.\r\n");
-                FlashLED(LED_RED, 1000);
-                return;
-            }
-        }
-    #endif
-
-    #if false
-        // Check the speed of the entire communication process with the card (ReadPassiveTargetID + Crypto stuff):
-        // In Classic         mode: 125 ms
-        // In Desfire Random  mode: 676 ms
-        // In Desfire Default mode: 799 ms
-        // If you want to get this faster modify PN532_SOFT_SPI_DELAY but you must check the SPI signals on an oscilloscope!
-        char s8_Buf[80];
-        sprintf(s8_Buf, "Reading the card took %d ms.\r\n", (int)(Utils::GetMillis64() - u64_StartTick));
-        Utils::Print(s8_Buf);
-    #endif
+    // TODO XXX Check card authorization
 
     switch (k_User.u8_Flags & DOOR_BOTH)
     {
@@ -1005,261 +850,5 @@ void LongDelay(int s32_Interval)
         s32_Interval -= s32_Delay;
     }
 }
-
-// =================================== DESFIRE ONLY =========================================
-
-#if USE_DESFIRE
-
-// If the card is personalized -> authenticate with SECRET_PICC_MASTER_KEY,
-// otherwise authenticate with the factory default DES key.
-bool AuthenticatePICC(byte* pu8_KeyVersion)
-{
-    if (!gi_PN532.SelectApplication(0x000000)) // PICC level
-        return false;
-
-    if (!gi_PN532.GetKeyVersion(0, pu8_KeyVersion)) // Get version of PICC master key
-        return false;
-
-    // The factory default key has version 0, while a personalized card has key version CARD_KEY_VERSION
-    if (*pu8_KeyVersion == CARD_KEY_VERSION)
-    {
-        if (!gi_PN532.Authenticate(0, &gi_PiccMasterKey))
-            return false;
-    }
-    else // The card is still in factory default state
-    {
-        if (!gi_PN532.Authenticate(0, &gi_PN532.DES2_DEFAULT_KEY))
-            return false;
-    }
-    return true;
-}
-
-// Generate two dynamic secrets: the Application master key (AES 16 byte or DES 24 byte) and the 16 byte StoreValue.
-// Both are derived from the 7 byte card UID and the the user name + random data stored in EEPROM using two 24 byte 3K3DES keys.
-// This function takes only 6 milliseconds to do the cryptographic calculations.
-bool GenerateDesfireSecrets(kUser* pk_User, DESFireKey* pi_AppMasterKey, byte u8_StoreValue[16])
-{
-    // The buffer is initialized to zero here
-    byte u8_Data[24] = {0}; 
-
-    // Copy the 7 byte card UID into the buffer
-    memcpy(u8_Data, pk_User->ID.u8, 7);
-
-    // XOR the user name and the random data that are stored in EEPROM over the buffer.
-    // s8_Name[NAME_BUF_SIZE] contains for example { 'P', 'e', 't', 'e', 'r', 0, 0xDE, 0x45, 0x70, 0x5A, 0xF9, 0x11, 0xAB }
-    int B=0;
-    for (int N=0; N<NAME_BUF_SIZE; N++)
-    {
-        u8_Data[B++] ^= pk_User->s8_Name[N];
-        if (B > 15) B = 0; // Fill the first 16 bytes of u8_Data, the rest remains zero.
-    }
-
-    byte u8_AppMasterKey[24];
-
-    DES i_3KDes;
-    if (!i_3KDes.SetKeyData(SECRET_APPLICATION_KEY, sizeof(SECRET_APPLICATION_KEY), 0) || // set a 24 byte key (168 bit)
-        !i_3KDes.CryptDataCBC(CBC_SEND, KEY_ENCIPHER, u8_AppMasterKey, u8_Data, 24))
-        return false;
-    
-    if (!i_3KDes.SetKeyData(SECRET_STORE_VALUE_KEY, sizeof(SECRET_STORE_VALUE_KEY), 0) || // set a 24 byte key (168 bit)
-        !i_3KDes.CryptDataCBC(CBC_SEND, KEY_ENCIPHER, u8_StoreValue, u8_Data, 16))
-        return false;
-
-    // If the key is an AES key only the first 16 bytes will be used
-    if (!pi_AppMasterKey->SetKeyData(u8_AppMasterKey, sizeof(u8_AppMasterKey), CARD_KEY_VERSION))
-        return false;
-
-    return true;
-}
-
-// Check that the data stored on the card is the same as the secret generated by GenerateDesfireSecrets()
-bool CheckDesfireSecret(kUser* pk_User)
-{
-    DESFIRE_KEY_TYPE i_AppMasterKey;
-    byte u8_StoreValue[16];
-    if (!GenerateDesfireSecrets(pk_User, &i_AppMasterKey, u8_StoreValue))
-        return false;
-
-    if (!gi_PN532.SelectApplication(0x000000)) // PICC level
-        return false;
-
-    byte u8_Version; 
-    if (!gi_PN532.GetKeyVersion(0, &u8_Version))
-        return false;
-
-    // The factory default key has version 0, while a personalized card has key version CARD_KEY_VERSION
-    if (u8_Version != CARD_KEY_VERSION)
-        return false;
-
-    if (!gi_PN532.SelectApplication(CARD_APPLICATION_ID))
-        return false;
-
-    if (!gi_PN532.Authenticate(0, &i_AppMasterKey))
-        return false;
-
-    // Read the 16 byte secret from the card
-    byte u8_FileData[16];
-    if (!gi_PN532.ReadFileData(CARD_FILE_ID, 0, 16, u8_FileData))
-        return false;
-
-    if (memcmp(u8_FileData, u8_StoreValue, 16) != 0)
-        return false;
-
-    return true;
-}
-
-// Store the SECRET_PICC_MASTER_KEY on the card
-bool ChangePiccMasterKey()
-{
-    byte u8_KeyVersion;
-    if (!AuthenticatePICC(&u8_KeyVersion))
-        return false;
-
-    if (u8_KeyVersion != CARD_KEY_VERSION) // empty card
-    {
-        // Store the secret PICC master key on the card.
-        if (!gi_PN532.ChangeKey(0, &gi_PiccMasterKey, NULL))
-            return false;
-
-        // A key change always requires a new authentication
-        if (!gi_PN532.Authenticate(0, &gi_PiccMasterKey))
-            return false;
-    }
-    return true;
-}
-
-// Create the application SECRET_APPLICATION_ID,
-// store the dynamic Application master key in the application,
-// create a StandardDataFile SECRET_FILE_ID and store the dynamic 16 byte value into that file.
-// This function requires previous authentication with PICC master key.
-bool StoreDesfireSecret(kUser* pk_User)
-{
-    if (CARD_APPLICATION_ID == 0x000000 || CARD_KEY_VERSION == 0)
-        return false; // severe errors in Secrets.h -> abort
-  
-    DESFIRE_KEY_TYPE i_AppMasterKey;
-    byte u8_StoreValue[16];
-    if (!GenerateDesfireSecrets(pk_User, &i_AppMasterKey, u8_StoreValue))
-        return false;
-
-    // First delete the application (The current application master key may have changed after changing the user name for that card)
-    if (!gi_PN532.DeleteApplicationIfExists(CARD_APPLICATION_ID))
-        return false;
-
-    // Create the new application with default settings (we must still have permission to change the application master key later)
-    if (!gi_PN532.CreateApplication(CARD_APPLICATION_ID, KS_FACTORY_DEFAULT, 1, i_AppMasterKey.GetKeyType()))
-        return false;
-
-    // After this command all the following commands will apply to the application (rather than the PICC)
-    if (!gi_PN532.SelectApplication(CARD_APPLICATION_ID))
-        return false;
-
-    // Authentication with the application's master key is required
-    if (!gi_PN532.Authenticate(0, &DEFAULT_APP_KEY))
-        return false;
-
-    // Change the master key of the application
-    if (!gi_PN532.ChangeKey(0, &i_AppMasterKey, NULL))
-        return false;
-
-    // A key change always requires a new authentication with the new key
-    if (!gi_PN532.Authenticate(0, &i_AppMasterKey))
-        return false;
-
-    // After this command the application's master key and it's settings will be frozen. They cannot be changed anymore.
-    // To read or enumerate any content (files) in the application the application master key will be required.
-    // Even if someone knows the PICC master key, he will neither be able to read the data in this application nor to change the app master key.
-    if (!gi_PN532.ChangeKeySettings(KS_CHANGE_KEY_FROZEN))
-        return false;
-
-    // --------------------------------------------
-
-    // Create Standard Data File with 16 bytes length
-    DESFireFilePermissions k_Permis;
-    k_Permis.e_ReadAccess         = AR_KEY0;
-    k_Permis.e_WriteAccess        = AR_KEY0;
-    k_Permis.e_ReadAndWriteAccess = AR_KEY0;
-    k_Permis.e_ChangeAccess       = AR_KEY0;
-    if (!gi_PN532.CreateStdDataFile(CARD_FILE_ID, &k_Permis, 16))
-        return false;
-
-    // Write the StoreValue into that file
-    if (!gi_PN532.WriteFileData(CARD_FILE_ID, 0, 16, u8_StoreValue))
-        return false;       
-  
-    return true;
-}
-
-// If you have already written the master key to a card and want to use the card for another purpose 
-// you can restore the master key with this function. Additionally the application SECRET_APPLICATION_ID is deleted.
-// If a user has been stored in the EEPROM for this card he will also be deleted.
-bool RestoreDesfireCard()
-{
-    kUser k_User;
-    kCard k_Card;  
-    if (!WaitForCard(&k_User, &k_Card))
-        return false;
-
-    UserManager::DeleteUser(k_User.ID.u64, NULL);    
-
-    if ((k_Card.e_CardType & CARD_Desfire) == 0)
-    {
-        Utils::Print("The card is not a Desfire card.\r\n");
-        return false;
-    }
-
-    byte u8_KeyVersion;
-    if (!AuthenticatePICC(&u8_KeyVersion))
-        return false;
-
-    // If the key version is zero AuthenticatePICC() has already successfully authenticated with the factory default DES key
-    if (u8_KeyVersion == 0)
-        return true;
-
-    // An error in DeleteApplication must not abort. 
-    // The key change below is more important and must always be executed.
-    bool b_Success = gi_PN532.DeleteApplicationIfExists(CARD_APPLICATION_ID);
-    if (!b_Success)
-    {
-        // After any error the card demands a new authentication
-        if (!gi_PN532.Authenticate(0, &gi_PiccMasterKey))
-            return false;
-    }
-    
-    if (!gi_PN532.ChangeKey(0, &gi_PN532.DES2_DEFAULT_KEY, NULL))
-        return false;
-
-    // Check if the key change was successfull
-    if (!gi_PN532.Authenticate(0, &gi_PN532.DES2_DEFAULT_KEY))
-        return false;
-
-    return b_Success;
-}
-
-bool MakeRandomCard()
-{
-    Utils::Print("\r\nATTENTION: Configuring the card to send a random ID cannot be reversed.\r\nThe card will be a random ID card FOREVER!\r\nIf you are really sure what you are doing hit 'Y' otherwise hit 'N'.\r\n\r\n");
-    if (!WaitForKeyYesNo())
-        return false;
-    
-    kUser k_User;
-    kCard k_Card;  
-    if (!WaitForCard(&k_User, &k_Card))
-        return false;
-
-    if ((k_Card.e_CardType & CARD_Desfire) == 0)
-    {
-        Utils::Print("The card is not a Desfire card.\r\n");
-        return false;
-    }
-
-    byte u8_KeyVersion;
-    if (!AuthenticatePICC(&u8_KeyVersion))
-        return false;
-
-    return gi_PN532.EnableRandomIDForever();
-}
-
-#endif // USE_DESFIRE
 
 
