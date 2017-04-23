@@ -31,7 +31,7 @@ MFRC522IntfSpi::PCD_WriteRegister(PCD_Register reg,	///< The register to write t
   )
 {
   begin();
-  _spi.transfer(reg <<  1);	// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
+  _spi.transfer(reg << 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
   _spi.transfer(value);
   end();
 }				// End PCD_WriteRegister()

@@ -26,17 +26,13 @@
 
 
 // The software SPI SCK  pin (Clock)
-#define SPI_CLK_PIN       23
-// The software SPI MISO pin (Master In, Slave Out)
-#define SPI_MISO_PIN      25
-// The software SPI MOSI pin (Master Out, Slave In)
-#define SPI_MOSI_PIN      26
+#define SPI_MODULE        3
 // The software SPI SSEL pin (Chip Select)
 #define SPI_CS_PIN        24
 
 // This Arduino / Teensy pin is connected to the PN532 RSTPDN pin (reset the PN532) 
 // When a communication error with the PN532 is detected the board is reset automatically.
-#define RESET_PIN         10
+#define RESET_PIN         3
 
 // TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
@@ -93,7 +89,15 @@
     #warning "This code has not been tested on any other board than Teensy 3.1 / 3.2"
 #endif
 
+#include "SPI.h"
+#include "MFRC522.h"
+#include "MFRC522Intf.h"
 #include "UserManager.h"
+#include "DesFireKey.h"
+
+MFRC522IntfSpi mfrcIntf(SPI, SPI_CS_PIN);
+MFRC522<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
@@ -105,6 +109,21 @@ enum eLED
     LED_OFF,
     LED_RED,
     LED_GREEN,
+};
+
+enum eCardType
+{
+    CARD_Unknown   = 0, // Mifare Classic or other card
+    CARD_Desfire   = 1, // A Desfire card with normal 7 byte UID  (bit 0)
+    CARD_DesRandom = 3, // A Desfire card with 4 byte random UID  (bit 0 + 1)
+};
+
+struct kCard
+{
+    byte     u8_UidLength;   // UID = 4 or 7 bytes
+    byte     u8_KeyVersion;  // for Desfire random ID cards
+    bool      b_PN532_Error; // true -> the error comes from the PN532, false -> crypto error
+    eCardType e_CardType;    
 };
 
 // global variables
@@ -137,17 +156,22 @@ void setup()
 
     // Open USB serial port
     SerialClass::Begin(115200);
-    Utils::Print("Reader initializing\n");
+    Utils::Print("System initializing\n");
 
     // Use 12 bit resolution for the analog input (ADC)
     analogReadResolution(ANALOG_RESOLUTION);
     // Use the internal reference voltage (1.5V) as analog reference
     // analogReference(INTERNAL1V5); // TODO recompute the rest of the code to the proper Tiva references
 
-    Utils::Print("UART reader port initialized\n");
+    //Utils::Print("UART reader port initialized\n");
     
+  SPI.begin();
+  SPI.setModule(3);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setClockDivider(MFRC522_SPICLOCK);
+ 
     InitReader(false);
-    Utils::Print("Reader initialized\n");
 }
 
 void loop()
@@ -227,7 +251,7 @@ void loop()
     // Turn off the RF field to save battery
     // When the RF field is on,  the PN532 board consumes approx 110 mA.
     // When the RF field is off, the PN532 board consumes approx 18 mA.
-    // XXX gi_PN532.SwitchOffRfField();
+    mfrc522.PCD_AntennaOff();
 
     u64_LastRead = Utils::GetMillis64();
 }
@@ -246,26 +270,16 @@ void InitReader(bool b_ShowError)
     {
         gb_InitSuccess = false;
       
-        // XXX Reset the PN532
-        gi_PN532.begin(); // delay > 400 ms
-    
-        byte IC, VersionHi, VersionLo, Flags;
-        
-        /* XXX
-        if (!gi_PN532.GetFirmwareVersion(&IC, &VersionHi, &VersionLo, &Flags))
-            break;
-        */    
+  Serial.println("Initializing reader...");
+	mfrc522.PCD_Init();		// Init MFRC522
+  Serial.println("Getting reader info..");
+	mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
+  Serial.println("Setting gain to maximum");
+  mfrc522.PCD_SetAntennaGain(PCD_RxGain::RxGain_avg);
+  mfrc522.PCD_WriteRegister(PCD_Register::RxThresholdReg, 0x22);
+	Serial.println(F("Reader initialized."));
 
-        char Buf[80];
-        sprintf(Buf, "Chip: PN5%02X, Firmware version: %d.%d\r\n", IC, VersionHi, VersionLo);
-        Utils::Print(Buf);
-        sprintf(Buf, "Supports ISO 14443A:%s, ISO 14443B:%s, ISO 18092:%s\r\n", (Flags & 1) ? "Yes" : "No",
-                                                                                (Flags & 2) ? "Yes" : "No",
-                                                                                (Flags & 4) ? "Yes" : "No");
-        Utils::Print(Buf);
-         
         // XXX Set the max number of retry attempts to read from a card.
-        // XXX configure the PN532 to read RFID tags
     
         gb_InitSuccess = true;
     }
@@ -405,7 +419,6 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
       
-        gi_PN532.SetDebugLevel(s8_Parameter[0] - '0');
         return;
     }    
 
@@ -444,17 +457,17 @@ void OnCommandReceived(bool b_PasswordValid)
 
             if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
             {
-                if (RestoreDesfireCard()) Utils::Print("Restore success\r\n");
-                else                      Utils::Print("Restore failed\r\n");
-                gi_PN532.SwitchOffRfField();
+                //if (RestoreDesfireCard()) Utils::Print("Restore success\r\n");
+                //else                      Utils::Print("Restore failed\r\n");
+                mfrc522.PCD_AntennaOff();
                 return;
             }
 
             if (stricmp(gs8_CommandBuffer, "MAKERANDOM") == 0)
             {
-                if (MakeRandomCard()) Utils::Print("MakeRandom success\r\n");
-                else                  Utils::Print("MakeRandom failed\r\n");
-                gi_PN532.SwitchOffRfField();
+                /*if (MakeRandomCard()) Utils::Print("MakeRandom success\r\n");
+                else                  Utils::Print("MakeRandom failed\r\n");*/
+                mfrc522.PCD_AntennaOff();
                 return;
             }
 
@@ -467,7 +480,7 @@ void OnCommandReceived(bool b_PasswordValid)
             AddCardToEeprom(s8_Parameter);
 
             // Required! Otherwise the next ReadPassiveTargetId() does not detect the card and the door opens after adding a user.
-            gi_PN532.SwitchOffRfField();
+            mfrc522.PCD_AntennaOff();
             return;
         }
     
@@ -737,17 +750,24 @@ bool ReadCard(byte u8_UID[8], kCard* pk_Card)
 {
     memset(pk_Card, 0, sizeof(kCard));
   
-    if (!gi_PN532.ReadPassiveTargetID(u8_UID, &pk_Card->u8_UidLength, &pk_Card->e_CardType))
-    {
-        pk_Card->b_PN532_Error = true;
-        return false;
-    }
+        // Enable field
+        mfrc522.PCD_AntennaOn();
+        delay(100);
 
-    if (pk_Card->e_CardType == CARD_DesRandom) // The card is a Desfire card in random ID mode
-    {
-        Utils::Print("Cards with random ID are not supported in Classic mode.\r\n");
-        return false;    
-    }
+	// Look for new cards
+	if ( ! mfrc522.PICC_IsNewCardPresent()) {
+		return true;
+	}
+
+  Serial.println("Card detected...");
+
+	// Select one of the cards
+	if ( ! mfrc522.PICC_ReadCardSerial()) {
+		return true;
+	}
+
+	// Dump debug info about the card; PICC_HaltA() is automatically called
+	mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
     return true;
 }
 
