@@ -134,7 +134,9 @@ enum PICC_Command:byte
   PICC_CMD_MF_TRANSFER = 0xB0,	// Writes the contents of the internal data register to a block.
   // The commands used for MIFARE Ultralight (from http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf, Section 8.6)
   // The PICC_CMD_MF_READ and PICC_CMD_MF_WRITE can also be used for MIFARE Ultralight.
-  PICC_CMD_UL_WRITE = 0xA2	// Writes one 4 byte page to the PICC.
+  PICC_CMD_UL_WRITE = 0xA2,	// Writes one 4 byte page to the PICC.
+  PICC_CMD_UL_AUTHENTICATE = 0x1A, // Authenticates to Ultralight C.
+  PICC_CMD_UL_AUTHENTICATE_RESPONSE = 0xAF // Authentication response.
 };
 
   // MIFARE constants that does not fit anywhere else

@@ -5,6 +5,7 @@
  * Rewritten by Søren Thing Andersen (access.thing.dk), fall of 2013 (Translation to English, refactored, comments, anti collision, cascade levels.)
  * Extended by Tom Clement with functionality to write to sector 0 of UID changeable Mifare cards.
  * Released into the public domain.
+ * Split into RC522 logic and RC522 interface parts by Martin Sivak, Apr 2017 
  * 
  * Please read this file for an overview and then MFRC522.cpp for comments on the specific functions.
  * Search for "mf-rc522" on ebay.com to purchase the MF-RC522 board. 
@@ -14,7 +15,7 @@
  * 2) The PCD (short for Proximity Coupling Device): NXP MFRC522 Contactless Reader IC
  * 3) The PICC (short for Proximity Integrated Circuit Card): A card or tag using the ISO 14443A interface, eg Mifare or NTAG203.
  * 
- * The microcontroller and card reader uses SPI for communication.
+ * The microcontroller and card reader can use SPI or UART for communication.
  * The protocol is described in the MFRC522 datasheet: http://www.nxp.com/documents/data_sheet/MFRC522.pdf
  * 
  * The card reader and the tags communicate using a 13.56MHz electromagnetic field.
@@ -81,6 +82,8 @@
 #include <Arduino.h>
 #include "MFRC522Intf.h"
 #include "MFRC522Common.h"
+#include "utils.h"
+#include "des.h"
 
 // Firmware data for self-test
 // Reference values based on firmware version
@@ -158,6 +161,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Basic interface functions for communicating with the MFRC522
+// - basically just proxy methods for the interface implementation
 /////////////////////////////////////////////////////////////////////////////////////
   inline void PCD_WriteRegister(PCD_Register reg, byte value)
   {
@@ -219,7 +223,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     PCD_WriteRegister(CommandReg, PCD_CalcCRC);	// Start the calculation
 
     // Wait for the CRC calculation to complete. Each iteration of the while-loop takes 17.73μs.
-    // TODO check/modify for other architectures than Arduino Uno 16bit
+    // TODO check/modify for other architectures than Arduino Uno 16bit - seems to work with 32bit TI Stellaris
 
     // Wait for the CRC calculation to complete. Each iteration of the while-loop takes 17.73us.
     for (uint16_t i = 5000; i > 0; i--) {
@@ -2024,6 +2028,129 @@ protected:
 
     return STATUS_OK;
   }				// End MIFARE_TwoStepHelper()
+
+  /**
+   * Send command to Mifare compatible card and receive the reply. CRCs are computed and checked automatically,
+   * leave 2 extra bytes in the buffer and response buffer for CRC
+   *
+   * buffer - command buffer
+   * bufferSize - total size of buffer
+   * usedSize - valid data count in buffer
+   */
+  StatusCode PCD_Mifare_TransceiveWithReply(byte* buffer, byte bufferSize, byte usedSize, byte readBuffer, byte* readSize) {
+    StatusCode result;
+
+    if (bufferSize < usedSize + 2) {
+      return STATUS_NO_ROOM;
+    }
+
+    // Calculate CRC_A
+    result = PCD_CalculateCRC(buffer, usedSize, &buffer[usedSize]);
+    if (result != STATUS_OK) {
+      return result;
+    }
+
+    // Transmit the buffer and receive the response, validate CRC_A.
+    result = PCD_TransceiveData(buffer, usedSize + 2, readBuffer, &readSize, NULL, 0, true);
+    if (result != STATUS_OK) {
+      return result;
+    }
+   
+    *readSize -= 2; // Substract the CRC size
+    return STATUS_OK;
+  }
+
+  bool UltralightC_Authenticate(byte key[16]) {
+    CREATE_BUFFER(command, 35);
+    
+    ADD_BUFFER(command, PICC_CMD_UL_AUTHENTICATE);
+    ADD_BUFFER(command, 0x00);
+    byte responseSize = BUFFER_SIZE(command);
+
+    StatusCode result = PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
+    if (result != STATUS_OK || responseSize != 17 || *(BUFFER(command)) != PICC_CMD_UL_AUTHENTICATE_RESPONSE)
+    {
+        Serial.println("Authentication failed (1)");
+        return false;
+    }
+
+    const int s32_RandomSize = 16;
+
+    byte RndB[16];  // decrypted random B
+
+    mbedtls_des3_context tdes_ctx;
+    mbedtls_des3_init(&tdes_ctx);
+    mbedtls_des3_set2key_enc(&tdes_ctx, key);
+
+    // Fill IV with zeroes !ONLY ONCE HERE!
+    byte iv[8] = {0,};
+    
+    // decrypt command[1:17] using CBC_RECEIVE to RndB
+    mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_DECRYPT, 16, iv, command + 1, RndB);
+
+    byte RndB_rot[16]; // rotated random B
+    rotate_left(RndB_rot, RndB, s32_RandomSize);
+
+    byte RndA[16];
+    generate_random(RndA, s32_RandomSize);
+
+    CREATE_BUFFER(i_RndAB, 32); // (randomA + rotated randomB)
+    ADD_BUFFER_PTR(i_RndAB, RndA,     s32_RandomSize);
+    ADD_BUFFER_PTR(i_RndAB, RndB_rot, s32_RandomSize);
+
+    CREATE_BUFFER(i_RndAB_enc, 32); // encrypted (randomA + rotated randomB)
+    SET_BUFFER_LEN(i_RndAB_enc, 2*s32_RandomSize);
+
+    // encrypt i_RndAB[:32] to i_RndAB_enc, CBC_SEND
+    mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_ENCRYPT, BUFFER_SIZE(i_RndAB), iv, BUFFER(i_RndAB), BUFFER(i_RndAB_enc));
+
+        Serial.write("* RndB_enc:  ");
+        println(BUFFER(command), 16, HEX);
+        Serial.write("* RndB:      ");
+        println(RndB, 16, HEX);
+        Serial.write("* RndB_rot:  ");
+        println(RndB_rot, 16, HEX);
+        Serial.write("* RndA:      ");
+        println(RndA, 16, HEX);
+        Serial.write("* RndAB:     ");
+        println(BUFFER(i_RndAB), BUFFER_LEN(i_RndAB), HEX);
+        Serial.write("* RndAB_enc: ");
+        println(BUFFER(i_RndAB_enc), BUFFER_LEN(i_RndAB_enc), HEX);
+
+    byte RndA_enc[16]; // encrypted random A
+    responseSize = BUFFER_SIZE(command);
+    BUFFER_CLEAR(command);
+    ADD_BUFFER(command, PICC_CMD_UL_AUTHENTICATE_RESPONSE);
+    ADD_BUFFER_PTR(command, BUFFER(i_RndAB_enc), BUFFER_LEN(i_RndAB_enc));
+
+    result = PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
+    if (result != STATUS_OK || responseSize != 17 || *BUFFER(command) != 0x00)
+    {
+        Serial.println("Authentication failed (2)");
+        return false;
+    }
+
+    // decrypt command[1:17] to RndA_enc, CBC_RECEIVE
+    mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_DECRYPT, 16, iv, command + 1, RndA_enc);
+
+    Serial.write("* RndA_recv:     ");
+    println(RndA_enc, 16, HEX);
+
+    // compare rotate_left(RndA) with RndA_enc
+    if (*(RndA_enc + 15) != RndA[0]) {
+       Serial.println("Authentication failed (3)");
+       return false;
+    }
+
+    for (byte idx = 0; idx < 15; idx++) {
+      if (*(RndA_enc + idx) != RndA[1 + idx]) {
+        Serial.println("Authentication failed (4)");
+        return false;
+      }
+    }
+
+    return true;
+  }
 };
 
 #endif
