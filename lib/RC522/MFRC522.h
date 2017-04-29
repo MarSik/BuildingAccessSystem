@@ -149,6 +149,8 @@ public:
   // Member variables
   Uid uid;			// Used by PICC_ReadCardSerial().
 
+  boolean debug = false;
+
   /////////////////////////////////////////////////////////////////////////////////////
   // Functions for setting up the Arduino
   /////////////////////////////////////////////////////////////////////////////////////
@@ -683,9 +685,11 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // Repeat Cascade Level loop until we have a complete UID.
     uidComplete = false;
     while (!uidComplete) {
-      Serial.print("SELECT cascade ");
-      Serial.print(cascadeLevel);
-      Serial.println("");
+      if (debug) {
+        Serial.print("SELECT cascade ");
+        Serial.print(cascadeLevel);
+        Serial.println("");
+      }
 
       // Set the Cascade Level in the SEL byte, find out if we need to use the Cascade Tag in byte 2.
       switch (cascadeLevel) {
@@ -2018,15 +2022,21 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     }
 
     // Transmit the buffer and receive the response, validate CRC_A.
-    Serial.print("Sent: ");
-    println(buffer, usedSize + 2, HEX);
+    if (debug) {
+      Serial.print("Sent: ");
+      println(buffer, usedSize + 2, HEX);
+    }
+
     result = PCD_TransceiveData(buffer, usedSize + 2, readBuffer, readSize, NULL, 0, true);
-    Serial.print("Received status: ");
-    Serial.print(result);
-    Serial.print(" resp. size: ");
-    Serial.print(*readSize);
-    Serial.print(" resp. code: ");
-    println(readBuffer, *readSize, HEX);
+
+    if (debug) {
+      Serial.print("Received status: ");
+      Serial.print(result);
+      Serial.print(" resp. size: ");
+      Serial.print(*readSize);
+      Serial.print(" resp. code: ");
+      println(readBuffer, *readSize, HEX);
+    }
 
     if (result != STATUS_OK) {
       return result;
@@ -2046,7 +2056,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     StatusCode result = PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
     if (result != STATUS_OK || *(BUFFER(command)) != PICC_CMD_UL_AUTHENTICATE_RESPONSE)
     {
-        Serial.println("Authentication failed (1)");
+        if (debug) Serial.println("Authentication failed (1)");
         return false;
     }
 
@@ -2081,6 +2091,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     mbedtls_des3_set2key_enc(&tdes_ctx, key);
     mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_ENCRYPT, BUFFER_SIZE(i_RndAB), iv, BUFFER(i_RndAB), BUFFER(i_RndAB_enc));
 
+    if (debug) {
         Serial.write("* RndB_enc:  ");
         println(BUFFER(command) + 1, s32_RandomSize, HEX);
         Serial.write("* RndB:      ");
@@ -2093,6 +2104,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
         println(BUFFER(i_RndAB), BUFFER_LEN(i_RndAB), HEX);
         Serial.write("* RndAB_enc: ");
         println(BUFFER(i_RndAB_enc), BUFFER_LEN(i_RndAB_enc), HEX);
+    }
 
     responseSize = BUFFER_SIZE(command);
     BUFFER_CLEAR(command);
@@ -2102,7 +2114,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     result = PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
     if (result != STATUS_OK || *BUFFER(command) != 0x00)
     {
-        Serial.println("Authentication failed (2)");
+      if (debug) Serial.println("Authentication failed (2)");
         return false;
     }
 
@@ -2111,20 +2123,22 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     mbedtls_des3_set2key_dec(&tdes_ctx, key);
     mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_DECRYPT, s32_RandomSize, iv, BUFFER(command) + 1, RndA_dec);
 
-    Serial.write("* RndA_enc recv:     ");
-    println(BUFFER(command) + 1, s32_RandomSize, HEX);
-    Serial.write("* RndA_recv:     ");
-    println(RndA_dec, s32_RandomSize, HEX);
+    if (debug) {
+      Serial.write("* RndA_enc recv:     ");
+      println(BUFFER(command) + 1, s32_RandomSize, HEX);
+      Serial.write("* RndA_recv:     ");
+      println(RndA_dec, s32_RandomSize, HEX);
+    }
 
     // compare rotate_left(RndA) with RndA_enc
     if (*(RndA_dec + s32_RandomSize - 1) != RndA[0]) {
-       Serial.println("Authentication failed (3)");
+       if (debug) Serial.println("Authentication failed (3)");
        return false;
     }
 
     for (byte idx = 0; idx < s32_RandomSize - 1; idx++) {
       if (*(RndA_dec + idx) != RndA[1 + idx]) {
-        Serial.println("Authentication failed (4)");
+        if (debug) Serial.println("Authentication failed (4)");
         return false;
       }
     }

@@ -194,7 +194,7 @@ void loop()
             return;
         }
 
-        // Turn on the RF field for 100 ms then turn it off for one second (RF_OFF_INTERVAL) to safe battery
+        // Turn on the RF field for 100 ms then turn it off for one second (RF_OFF_INTERVAL) to save battery
         if ((int)(u64_StartTick - u64_LastRead) < RF_OFF_INTERVAL)
             return;
     }
@@ -211,20 +211,17 @@ void loop()
         uint64_t uid;
         if (ReadCard(&uid))
         {
-            if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
+            if (!mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
             {
-                FlashLED(LED_GREEN, 1000);
-            } else {
                 FlashLED(LED_RED, 1000);
+                Utils::Print("Card authentication failed!", LF);
+                break;
+            } else {
+              Utils::Print("Card successfully authenticated!", LF);
             }
 
             Utils::Print("> ");
-            break;
-        }
-
-        // XXX No card present in the RF field
-        if (1)
-        {
+        } else {
             gu64_LastID = 0;
 
             // Flash the green LED shortly. On Power Failure flash the red LED shortly.
@@ -233,8 +230,13 @@ void loop()
         }
 
         // Still the same card present
-        if (gu64_LastID == uid)
+        if (gu64_LastID == uid) {
+            Utils::PrintHex32(gu64_LastID);
+            Utils::Print(" == ");
+            Utils::PrintHex32(uid);
+            Utils::Print(" the same card, ignoring..", LF);
             break;
+        }
 
         // A different card was found in the RF field
         // OpenDoor() needs the RF field to be ON (for CheckDesfireSecret())
@@ -412,6 +414,12 @@ void OnCommandReceived(bool b_PasswordValid)
         {
             Utils::Print("Invalid debug level.\r\n");
             return;
+        }
+
+        if (s8_Parameter[0] == '2' || s8_Parameter[0] == '3') {
+            mfrc522.debug = true;
+        } else {
+            mfrc522.debug = false;
         }
 
         return;
@@ -788,7 +796,12 @@ bool ReadCard(uint64_t* uid)
 	}
 
   // Convert the card id to binary
-  *uid = strtol((const char*)(mfrc522.uid.uidByte), NULL, 16);
+  *uid = 0;
+  for (uint8_t idx = 0; idx < mfrc522.uid.size; idx++) {
+    *uid <<= 8;
+    *uid += mfrc522.uid.uidByte[idx];
+  }
+  //Utils::PrintHex32(*uid, LF);
 
 	// Dump debug info about the card; PICC_HaltA() is automatically called
 	mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
@@ -804,6 +817,8 @@ bool IsDesfireTimeout()
 
 void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
 {
+    Utils::Print("Checking authorization.", LF);
+
     kUser k_User;
     if (!UserManager::FindUser(*cardId, &k_User))
     {
