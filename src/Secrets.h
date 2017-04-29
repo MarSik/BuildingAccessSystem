@@ -10,6 +10,9 @@
 
 #include <Arduino.h>
 
+// This reader is used to open door group no. 1
+byte DOOR_ID = 1;
+
 // This 2K3DES key is the default key for pristine Ultralight C cards stored on the card as BREAKMEIFYOUCAN!
 const byte DEFAULT_UL_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A', 'C', 'U', 'O', 'Y', 'F'};
 
@@ -29,5 +32,11 @@ byte APPLICATION_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A
 //   = 0000 0111 0011 1101 0110 1010 0001 1000
 //   = Ox073D6A18
 const uint32_t APPLICATION_ID = 0x073D6A18; // 0OPLK18
+
+#define CARD_PAGE_APPID 0x04
+#define CARD_PAGE_DOOR1 0x05 // Format 1b: 0 allow on match, 1 deny on match; 7b days of week, 8b - bitset for 3h intervals, 16b reserved
+#define CARD_PAGE_DOOR2 0x06
+#define CARD_PAGE_DOOR3 0x07
+#define CARD_PAGE_DOOR4 0x08
 
 #endif

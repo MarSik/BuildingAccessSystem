@@ -1231,7 +1231,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
  */
   StatusCode PCD_MIFARE_Transceive(byte * sendData,	///< Pointer to the data to transfer to the FIFO. Do NOT include the CRC_A.
 				   byte sendLen,	///< Number of bytes in sendData.
-				   bool acceptTimeout	///< True => A timeout is also success
+				   bool acceptTimeout	= false ///< True => A timeout is also success
     )
   {
     StatusCode result;
@@ -2044,6 +2044,39 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
     *readSize -= 2; // Substract the CRC size
     return STATUS_OK;
+  }
+
+  StatusCode UltralightC_ChangeKey(const byte key[16]) {
+    CREATE_BUFFER(buff, 4);
+
+    ADD_BUFFER(buff, key[0x7]);
+    ADD_BUFFER(buff, key[0x6]);
+    ADD_BUFFER(buff, key[0x5]);
+    ADD_BUFFER(buff, key[0x4]);
+    StatusCode result = MIFARE_Ultralight_Write(0x2C, BUFFER(buff), 4);
+
+    BUFFER_CLEAR(buff);
+    ADD_BUFFER(buff, key[0x3]);
+    ADD_BUFFER(buff, key[0x2]);
+    ADD_BUFFER(buff, key[0x1]);
+    ADD_BUFFER(buff, key[0x0]);
+    result = MIFARE_Ultralight_Write(0x2D, BUFFER(buff), 4);
+
+    BUFFER_CLEAR(buff);
+    ADD_BUFFER(buff, key[0xF]);
+    ADD_BUFFER(buff, key[0xE]);
+    ADD_BUFFER(buff, key[0xD]);
+    ADD_BUFFER(buff, key[0xC]);
+    result = MIFARE_Ultralight_Write(0x2E, BUFFER(buff), 4);
+
+    BUFFER_CLEAR(buff);
+    ADD_BUFFER(buff, key[0xB]);
+    ADD_BUFFER(buff, key[0xA]);
+    ADD_BUFFER(buff, key[0x9]);
+    ADD_BUFFER(buff, key[0x8]);
+    result = MIFARE_Ultralight_Write(0x2F, BUFFER(buff), 4);
+
+    return result;
   }
 
   bool UltralightC_Authenticate(const byte key[16]) {

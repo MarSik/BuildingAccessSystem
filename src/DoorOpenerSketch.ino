@@ -78,17 +78,6 @@
 
 // ######################################################################################
 
-#if defined(__MK20DX256__) // the CPU of the Teensy 3.1 / 3.2
-    #if !defined(USB_SERIAL)
-        #error "Switch the compiler to USB Type = 'Serial'"
-    #endif
-    #if F_CPU != 24000000
-        #error "Switch the compiler to CPU Speed = '24 MHz optimized'"
-    #endif
-#else
-    #warning "This code has not been tested on any other board than Teensy 3.1 / 3.2"
-#endif
-
 #include <Arduino.h>
 #include <stdlib.h>
 #include "SPI.h"
@@ -100,7 +89,6 @@
 
 MFRC522IntfSpi mfrcIntf(SPI, SPI_CS_PIN);
 MFRC522<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
-
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
@@ -219,6 +207,26 @@ void loop()
             } else {
               Utils::Print("Card successfully authenticated!", LF);
             }
+
+            byte buffer[18] = {0, };
+            byte bufferLen = 18;
+            StatusCode status = mfrc522.MIFARE_Read(CARD_PAGE_APPID, buffer, &bufferLen);
+            if (status != STATUS_OK) {
+              Utils::Print("Could not get card application data: ");
+              Utils::PrintDec(status, LF);
+              break;
+            }
+
+            // buffer bytes 0-3 contain little endian uint32_t app id
+            uint32_t receivedAppId = *((uint32_t*)buffer);
+            if (receivedAppId != APPLICATION_ID) {
+              Utils::Print("Card registered to different application: ");
+              Utils::PrintHex32(receivedAppId, LF);
+              break;
+            }
+
+            // TODO check blacklist
+            // TODO decode permissions
 
             Utils::Print("> ");
         } else {
@@ -645,6 +653,7 @@ void SetKey(const char* key)
 {
   Utils::Print("New master key recorded!", LF);
   Utils::Print(key, LF);
+  // TODO
 }
 
 // Stores a new user and his card in the EEPROM of the Teensy
@@ -674,27 +683,15 @@ void AddCardToEeprom(const char* s8_UserName)
         return;
     }
 
-    #if USE_DESFIRE
-        if ((k_Card.e_CardType & CARD_Desfire) == 0)
-        {
-            Utils::Print("The card is not a Desfire card.\r\n");
-            return;
-        }
+    if (mfrc522.UltralightC_ChangeKey(APPLICATION_KEY) != STATUS_OK) {
+      Utils::Print("Application key could not be set", LF);
+      return;
+    }
 
-        if (!ChangePiccMasterKey())
-            return;
+    byte buff[4] = {0x80, 0x00, 0x00, 0x00};
 
-        if (k_Card.e_CardType != CARD_DesRandom)
-        {
-            // The secret stored in a file on the card is not required when using a card with random ID
-            // because obtaining the real card UID already requires the PICC master key. This is enough security.
-            if (!StoreDesfireSecret(&k_User))
-            {
-                Utils::Print("Could not personalize the card.\r\n");
-                return;
-            }
-        }
-    #endif
+    mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_APPID, (byte*)&APPLICATION_ID, 4);
+    mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_DOOR1, buff, 4);
 
     // By default a new user can open door one
     k_User.u8_Flags = DOOR_ONE;
@@ -806,13 +803,6 @@ bool ReadCard(uint64_t* uid)
 	// Dump debug info about the card; PICC_HaltA() is automatically called
 	mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
   return true;
-}
-
-// returns true if the cause of the last error was a Timeout.
-// XXX This may happen for Desfire cards when the card is too far away from the reader.
-bool IsDesfireTimeout()
-{
-    return false;
 }
 
 void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
