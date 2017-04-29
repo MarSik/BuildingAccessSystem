@@ -35,7 +35,7 @@ void ADD_BUFFER(byte* buff, byte b) {
 }
 
 void ADD_BUFFER_PTR(byte* buff, byte* source, byte len) {
-  memcpy(buff + buff[1], source, len);
+  memcpy(buff + 2 + buff[1], source, len);
   buff[1] += len;
 }
 
@@ -52,5 +52,3 @@ void generate_random(byte* dest, byte len) {
     *(dest + idx) = 0;
   }
 }
-
-

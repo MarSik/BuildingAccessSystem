@@ -15,6 +15,6 @@ void ADD_BUFFER(byte* buff, byte b);
 void ADD_BUFFER_PTR(byte* buff, byte* source, byte len);
 void rotate_left(byte* dest, byte* source, byte len);
 void generate_random(byte* dest, byte len);
-void println(byte* data, uint8_t len, uint8_t format);
+void println(const byte* data, uint8_t len, uint8_t format);
 
 #endif
