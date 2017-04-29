@@ -208,12 +208,9 @@ void loop()
         }
 
         kUser k_User;
-        kCard k_Card;
-        if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
+        uint64_t uid;
+        if (ReadCard(&uid))
         {
-            mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
-//                        mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
-
             if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
             {
                 FlashLED(LED_GREEN, 1000);
@@ -236,12 +233,12 @@ void loop()
         }
 
         // Still the same card present
-        if (gu64_LastID == strtol((char*)mfrc522.uid.uidByte, NULL, 16))
+        if (gu64_LastID == uid)
             break;
 
         // A different card was found in the RF field
         // OpenDoor() needs the RF field to be ON (for CheckDesfireSecret())
-      	OpenDoor(&(mfrc522.uid), u64_StartTick);
+      	OpenDoor(&uid, u64_StartTick);
         Utils::Print("> ");
     }
     while (false);
@@ -457,10 +454,11 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-        if (stricmp(gs8_CommandBuffer, "KEY") == 0)
+        if (strnicmp(gs8_CommandBuffer, "KEY", 3) == 0)
         {
           if (!ParseParameter(gs8_CommandBuffer + 3, &s8_Parameter, 32, 32))
               return;
+
           SetKey(s8_Parameter);
           return;
         }
@@ -638,14 +636,14 @@ bool ParseParameter(char* s8_Command, char** ps8_Parameter, int minLength, int m
 void SetKey(const char* key)
 {
   Utils::Print("New master key recorded!", LF);
-  Serial.println(strtol(key, NULL, 16), HEX);
+  Utils::Print(key, LF);
 }
 
 // Stores a new user and his card in the EEPROM of the Teensy
 void AddCardToEeprom(const char* s8_UserName)
 {
     kUser k_User;
-    kCard k_Card;
+    uint64_t k_Card;
     if (!WaitForCard(&k_User, &k_Card))
         return;
 
@@ -732,17 +730,18 @@ bool WaitForKeyYesNo()
 // Waits for the user to approximate the card to the reader
 // Timeout = 30 seconds
 // Fills in pk_Card competely, but writes only the UID to pk_User.
-bool WaitForCard(kUser* pk_User, kCard* pk_Card)
+bool WaitForCard(kUser* pk_User, uint64_t* pk_Card)
 {
     Utils::Print("Please approximate the card to the reader now!\r\nYou have 30 seconds. Abort with ESC.\r\n");
     uint64_t u64_Start = Utils::GetMillis64();
 
     while (true)
     {
-        if (ReadCard(pk_User->ID.u8, pk_Card) && pk_Card->u8_UidLength > 0)
+        uint64_t uid;
+        if (ReadCard(&uid) && uid != 0)
         {
             // Avoid that later the door is opened for this card if the card is a long time in the RF field.
-            gu64_LastID = pk_User->ID.u64;
+            gu64_LastID = uid;
 
             // All the stuff in this function takes about 2 seconds because the SPI bus speed has been throttled to 10 kHz.
             Utils::Print("Processing... (please do not remove the card)\r\n");
@@ -770,29 +769,30 @@ bool WaitForCard(kUser* pk_User, kCard* pk_Card)
 // ATTENTION: If no card is present, this function returns true. This is not an error. (check that pk_Card->u8_UidLength > 0)
 // pk_Card->u8_KeyVersion is > 0 if a random ID card did a valid authentication with SECRET_PICC_MASTER_KEY
 // pk_Card->b_PN532_Error is set true if the error comes from the PN532.
-bool ReadCard(byte u8_UID[8], kCard* pk_Card)
+bool ReadCard(uint64_t* uid)
 {
-    memset(pk_Card, 0, sizeof(kCard));
-
-        // Enable field
-        mfrc522.PCD_AntennaOn();
-        delay(100);
+  // Enable field
+  mfrc522.PCD_AntennaOn();
+  delay(100);
 
 	// Look for new cards
 	if ( ! mfrc522.PICC_IsNewCardPresent()) {
-		return true;
+		return false;
 	}
 
   Serial.println("Card detected...");
 
 	// Select one of the cards
 	if ( ! mfrc522.PICC_ReadCardSerial()) {
-		return true;
+		return false;
 	}
 
+  // Convert the card id to binary
+  *uid = strtol((const char*)(mfrc522.uid.uidByte), NULL, 16);
+
 	// Dump debug info about the card; PICC_HaltA() is automatically called
-	mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
-    return true;
+	mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
+  return true;
 }
 
 // returns true if the cause of the last error was a Timeout.
@@ -802,15 +802,13 @@ bool IsDesfireTimeout()
     return false;
 }
 
-// b_PiccAuth = true if random ID card with successful authentication with SECRET_PICC_MASTER_KEY
-void OpenDoor(Uid* pk_Card, uint64_t u64_StartTick)
+void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
 {
     kUser k_User;
-    uint64_t userId = strtol((char*)pk_Card->uidByte, NULL, 16);
-    if (!UserManager::FindUser(userId, &k_User))
+    if (!UserManager::FindUser(*cardId, &k_User))
     {
         Utils::Print("Unknown person tries to open the door: ");
-        Utils::PrintHexBuf((byte*)&userId, 7, LF);
+        Utils::PrintHexBuf((byte*)cardId, 7, LF);
         FlashLED(LED_RED, 1000);
         return;
     }
@@ -824,9 +822,7 @@ void OpenDoor(Uid* pk_Card, uint64_t u64_StartTick)
         case DOOR_BOTH: Utils::Print("Opening door 1 + 2 for "); break;
         default:        Utils::Print("No door specified for ");  break;
     }
-    Utils::Print(k_User.s8_Name);
-    Utils::Print(" w/ ");
-    Utils::Print((const char*)mfrc522.PICC_GetTypeName(mfrc522.PICC_GetType(pk_Card->sak)), LF);
+    Utils::Print(k_User.s8_Name, LF);
 
     SetLED(LED_GREEN);
     if (k_User.u8_Flags & DOOR_ONE)
@@ -849,7 +845,7 @@ void OpenDoor(Uid* pk_Card, uint64_t u64_StartTick)
     SetLED(LED_OFF);
 
     // Avoid that the door is opened twice when the card is in the RF field for a longer time.
-    gu64_LastID = userId;
+    gu64_LastID = *cardId;
 }
 
 // returns the voltage at the given pin in Volt multiplied with 10
