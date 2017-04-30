@@ -2046,6 +2046,19 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     return STATUS_OK;
   }
 
+  // Configure the autnentication based memory protection
+  StatusCode UltralightC_SetAuthProtection(const byte firstPage, const boolean protectRead = false)
+  {
+     byte buffer[4] = {0x00, 0x00, 0x00, 0X00};
+     buffer[0] = protectRead ? 0x00 : 0X01;
+     StatusCode result = MIFARE_Ultralight_Write(UL_AUTH1, buffer, 4);
+     if (result != STATUS_OK) return result;
+
+     buffer[0] = firstPage;
+     result = MIFARE_Ultralight_Write(UL_AUTH0, buffer, 4);
+     return result;
+  }
+
   StatusCode UltralightC_ChangeKey(const byte key[16]) {
     CREATE_BUFFER(buff, 4);
 
@@ -2053,28 +2066,28 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     ADD_BUFFER(buff, key[0x6]);
     ADD_BUFFER(buff, key[0x5]);
     ADD_BUFFER(buff, key[0x4]);
-    StatusCode result = MIFARE_Ultralight_Write(0x2C, BUFFER(buff), 4);
+    StatusCode result = MIFARE_Ultralight_Write(UL_3DES1_LSB, BUFFER(buff), 4);
 
     BUFFER_CLEAR(buff);
     ADD_BUFFER(buff, key[0x3]);
     ADD_BUFFER(buff, key[0x2]);
     ADD_BUFFER(buff, key[0x1]);
     ADD_BUFFER(buff, key[0x0]);
-    result = MIFARE_Ultralight_Write(0x2D, BUFFER(buff), 4);
+    result = MIFARE_Ultralight_Write(UL_3DES1_MSB, BUFFER(buff), 4);
 
     BUFFER_CLEAR(buff);
     ADD_BUFFER(buff, key[0xF]);
     ADD_BUFFER(buff, key[0xE]);
     ADD_BUFFER(buff, key[0xD]);
     ADD_BUFFER(buff, key[0xC]);
-    result = MIFARE_Ultralight_Write(0x2E, BUFFER(buff), 4);
+    result = MIFARE_Ultralight_Write(UL_3DES2_LSB, BUFFER(buff), 4);
 
     BUFFER_CLEAR(buff);
     ADD_BUFFER(buff, key[0xB]);
     ADD_BUFFER(buff, key[0xA]);
     ADD_BUFFER(buff, key[0x9]);
     ADD_BUFFER(buff, key[0x8]);
-    result = MIFARE_Ultralight_Write(0x2F, BUFFER(buff), 4);
+    result = MIFARE_Ultralight_Write(UL_3DES2_MSB, BUFFER(buff), 4);
 
     return result;
   }
