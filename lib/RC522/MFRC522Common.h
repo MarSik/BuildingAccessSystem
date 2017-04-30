@@ -192,4 +192,13 @@ typedef struct
   byte keyByte[MF_KEY_SIZE];
 } MIFARE_Key;
 
+enum UltralightPages : byte {
+  UL_AUTH0 = 0x2A, // byte 0 defines the first address that will be auth protected
+  UL_AUTH1 = 0x2B, // byte 0 bit0 defines the mode 1 - write protected; 0 - read and write protected
+  UL_3DES1_LSB = 0x2C,
+  UL_3DES1_MSB = 0x2D,
+  UL_3DES2_LSB = 0x2E,
+  UL_3DES2_MSB = 0x2F
+};
+
 #endif
