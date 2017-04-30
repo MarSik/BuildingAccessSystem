@@ -34,7 +34,7 @@ byte APPLICATION_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A
 const uint32_t APPLICATION_ID = 0x073D6A18; // 0OPLK18
 
 #define CARD_PAGE_APPID 0x04
-#define CARD_PAGE_DOOR1 0x05 // Format 1b: 0 allow on match, 1 deny on match; 7b days of week, 8b - bitset for 3h intervals, 16b reserved
+#define CARD_PAGE_DOOR1 0x05 // Format 1b: 0 allow on match, 1 deny on match; 7b days of week, 8b - bitset for 3h intervals, 8b reserved, 8b CRC xor of 0x55 and the previous 3 bytes
 #define CARD_PAGE_DOOR2 0x06
 #define CARD_PAGE_DOOR3 0x07
 #define CARD_PAGE_DOOR4 0x08

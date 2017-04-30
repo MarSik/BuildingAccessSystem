@@ -660,8 +660,8 @@ void SetKey(const char* key)
 void AddCardToEeprom(const char* s8_UserName)
 {
     kUser k_User;
-    uint64_t k_Card;
-    if (!WaitForCard(&k_User, &k_Card))
+    uint64_t cardId;
+    if (!WaitForCard(&k_User, &cardId))
         return;
 
     // First the entire memory of s8_Name is filled with random data.
@@ -688,8 +688,9 @@ void AddCardToEeprom(const char* s8_UserName)
       return;
     }
 
-    byte buff[4] = {0x80, 0x00, 0x00, 0x00};
+    byte buff[4] = {0x80, 0x00, 0x00, 0x00}; // Allow access, no conditions
 
+    mfrc522.UltralightC_SetAuthProtection(0x3);
     mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_APPID, (byte*)&APPLICATION_ID, 4);
     mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_DOOR1, buff, 4);
 
