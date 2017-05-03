@@ -217,8 +217,12 @@ void loop()
               break;
             }
 
-            // buffer bytes 0-3 contain little endian uint32_t app id
-            uint32_t receivedAppId = *reinterpret_cast<uint32_t*>(buffer);
+            // buffer bytes 0-3 contain little endian uint32_t app id (byte 0 is LSB)
+            uint32_t receivedAppId = buffer[3];
+            receivedAppId = (receivedAppId << 8) | buffer[2];
+            receivedAppId = (receivedAppId << 8) | buffer[1];
+            receivedAppId = (receivedAppId << 8) | buffer[0];
+
             if (receivedAppId != APPLICATION_ID) {
               Utils::Print("Card registered to different application: ");
               Utils::PrintHex32(receivedAppId, LF);
