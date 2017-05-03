@@ -7,11 +7,13 @@
 #define MFRC522Extended_h
 
 #include <Arduino.h>
-#include "MFRC522.h"
+#include "MFRC522Mifare.h"
+#include "MFRC522Intf.h"
 
-template < class T > class MFRC522Extended:public MFRC522 < T > {
-
+template < class T > class MFRC522DESfire : public MFRC522Mifare < T > {
 public:
+  MFRC522DESfire(T & intf, byte resetPowerDownPin) : MFRC522Mifare(intf, resetPowerDownPin) {}
+
   // ISO/IEC 14443-4 bit rates
   enum TagBitRates:byte
   {
@@ -86,7 +88,7 @@ public:
   /////////////////////////////////////////////////////////////////////////////////////
   // Contructors
   /////////////////////////////////////////////////////////////////////////////////////
-MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
+MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522Mifare<T>(intf, rst) {
   };
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -111,13 +113,13 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
   // Support functions
   /////////////////////////////////////////////////////////////////////////////////////
   static PICC_Type PICC_GetType(TagInfo * tag);
-  using MFRC522::PICC_GetType;	// // make old PICC_GetType(byte sak) available, otherwise would be hidden by PICC_GetType(TagInfo *tag)
+  using MFRC522<T>::PICC_GetType;	// // make old PICC_GetType(byte sak) available, otherwise would be hidden by PICC_GetType(TagInfo *tag)
 
   // Support functions for debuging
   void PICC_DumpToSerial(TagInfo * tag);
-  using MFRC522::PICC_DumpToSerial;	// make old PICC_DumpToSerial(Uid *uid) available, otherwise would be hidden by PICC_DumpToSerial(TagInfo *tag)
+  using MFRC522<T>::PICC_DumpToSerial;	// make old PICC_DumpToSerial(Uid *uid) available, otherwise would be hidden by PICC_DumpToSerial(TagInfo *tag)
   void PICC_DumpDetailsToSerial(TagInfo * tag);
-  using MFRC522::PICC_DumpDetailsToSerial;	// make old PICC_DumpDetailsToSerial(Uid *uid) available, otherwise would be hidden by PICC_DumpDetailsToSerial(TagInfo *tag)
+  using MFRC522<T>::PICC_DumpDetailsToSerial;	// make old PICC_DumpDetailsToSerial(Uid *uid) available, otherwise would be hidden by PICC_DumpDetailsToSerial(TagInfo *tag)
   void PICC_DumpISO14443_4(TagInfo * tag);
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +135,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  * On success:
  *    - The chosen PICC is in state ACTIVE(*) and all other PICCs have returned to state IDLE/HALT. (Figure 7 of the ISO/IEC 14443-3 draft.)
  *    - The UID size and value of the chosen PICC is returned in *uid along with the SAK.
- * 
+ *
  * A PICC UID consists of 4, 7 or 10 bytes.
  * Only 4 bytes can be specified in a SELECT command, so for the longer UIDs two or three iterations are used:
  *    UID size  Number of UID bytes   Cascade levels    Example of PICC
@@ -141,10 +143,10 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  *    single         4            1       MIFARE Classic
  *    double         7            2       MIFARE Ultralight
  *    triple        10            3       Not currently in use?
- * 
+ *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
-  MFRC522::StatusCode PICC_Select(Uid * uid,	///< Pointer to Uid struct. Normally output, but can also be used to supply a known UID.
+  MFRC522<T>::StatusCode PICC_Select(Uid * uid,	///< Pointer to Uid struct. Normally output, but can also be used to supply a known UID.
 				  byte validBits	///< The number of known UID bits supplied in *uid. Normally 0. If set you must also supply uid->size.
     ) {
     bool uidComplete;
@@ -159,13 +161,13 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
     byte buffer[9];		// The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
     byte bufferUsed;		// The number of bytes used in the buffer, ie the number of bytes to transfer to the FIFO.
     byte rxAlign;		// Used in BitFramingReg. Defines the bit position for the first bit received.
-    byte txLastBits;		// Used in BitFramingReg. The number of valid bits in the last transmitted byte. 
+    byte txLastBits;		// Used in BitFramingReg. The number of valid bits in the last transmitted byte.
     byte *responseBuffer;
     byte responseLength;
 
     // Description of buffer structure:
     //    Byte 0: SEL         Indicates the Cascade Level: PICC_CMD_SEL_CL1, PICC_CMD_SEL_CL2 or PICC_CMD_SEL_CL3
-    //    Byte 1: NVB         Number of Valid Bits (in complete command, not just the UID): High nibble: complete bytes, Low nibble: Extra bits. 
+    //    Byte 1: NVB         Number of Valid Bits (in complete command, not just the UID): High nibble: complete bytes, Low nibble: Extra bits.
     //    Byte 2: UID-data or CT    See explanation below. CT means Cascade Tag.
     //    Byte 3: UID-data
     //    Byte 4: UID-data
@@ -292,7 +294,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	  if (collisionPos == 0) {
 	    collisionPos = 32;
 	  }
-	  if (collisionPos <= currentLevelKnownBits) {	// No progress - should not happen 
+	  if (collisionPos <= currentLevelKnownBits) {	// No progress - should not happen
 	    return STATUS_INTERNAL_ERROR;
 	  }
 	  // Choose the PICC with the bit set.
@@ -304,7 +306,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	  return result;
 	} else {		// STATUS_OK
 	  if (currentLevelKnownBits >= 32) {	// This was a SELECT.
-	    selectDone = true;	// No more anticollision 
+	    selectDone = true;	// No more anticollision
 	    // We continue below outside the while.
 	  } else {		// This was an ANTICOLLISION.
 	    // We now have all 32 bits of the UID in this Cascade Level
@@ -379,16 +381,16 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	    //
 	    // I have almost constant timeouts when changing speeds :(
 	    // default never used, so only delarate
-	    //TagBitRates ds = BITRATE_106KBITS; 
+	    //TagBitRates ds = BITRATE_106KBITS;
 	    //TagBitRates dr = BITRATE_106KBITS;
 	    TagBitRates ds;
 	    TagBitRates dr;
 
 	    //// TODO Not working at 848 or 424
-	    //if (ats.ta1.ds & 0x04) 
+	    //if (ats.ta1.ds & 0x04)
 	    //{
 	    //  ds = BITRATE_848KBITS;
-	    //} 
+	    //}
 	    //else if (ats.ta1.ds & 0x02)
 	    //{
 	    //  ds = BITRATE_424KBITS;
@@ -397,7 +399,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	    //{
 	    //  ds = BITRATE_212KBITS;
 	    //}
-	    //else 
+	    //else
 	    //{
 	    //  ds = BITRATE_106KBITS;
 	    //}
@@ -409,10 +411,10 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	    }
 
 	    //// Not working at 848 or 424
-	    //if (ats.ta1.dr & 0x04) 
+	    //if (ats.ta1.dr & 0x04)
 	    //{
 	    //  dr = BITRATE_848KBITS;
-	    //} 
+	    //}
 	    //else if (ats.ta1.dr & 0x02)
 	    //{
 	    //  dr = BITRATE_424KBITS;
@@ -421,7 +423,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 	    //{
 	    //  dr = BITRATE_212KBITS;
 	    //}
-	    //else 
+	    //else
 	    //{
 	    //  dr = BITRATE_106KBITS;
 	    //}
@@ -446,7 +448,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
-  MFRC522::StatusCode PICC_RequestATS(Ats * ats) {
+  MFRC522<T>::StatusCode PICC_RequestATS(Ats * ats) {
     // TODO unused variable
     //byte count;
     MFRC522::StatusCode result;
@@ -459,7 +461,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
     // Build command buffer
     bufferATS[0] = PICC_CMD_RATS;
 
-    // The CID defines the logical number of the addressed card and has a range of 0 
+    // The CID defines the logical number of the addressed card and has a range of 0
     // through 14; 15 is reserved for future use (RFU).
     //
     // FSDI codes the maximum frame size (FSD) that the terminal can receive.
@@ -614,11 +616,11 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
   }				// End PICC_RequestATS()
 
 /**
- * Transmits Protocol and Parameter Selection Request (PPS) without parameter 1 
+ * Transmits Protocol and Parameter Selection Request (PPS) without parameter 1
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
-  MFRC522::StatusCode PICC_PPS() {
+  MFRC522<T>::StatusCode PICC_PPS() {
     StatusCode result;
 
     byte ppsBuffer[4];
@@ -655,7 +657,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
-  MFRC522::StatusCode PICC_PPS(TagBitRates sendBitRate,	///< DS
+  MFRC522<T>::StatusCode PICC_PPS(TagBitRates sendBitRate,	///< DS
 			       TagBitRates receiveBitRate	///< DR
     ) {
     StatusCode result;
@@ -747,7 +749,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 // Functions for communicating with ISO/IEC 14433-4 cards
 /////////////////////////////////////////////////////////////////////////////////////
 
-  MFRC522::StatusCode TCL_Transceive(PcbBlock * send, PcbBlock * back) {
+  MFRC522<T>::StatusCode TCL_Transceive(PcbBlock * send, PcbBlock * back) {
     MFRC522::StatusCode result;
     byte inBuffer[FIFO_SIZE];
     byte inBufferSize = FIFO_SIZE;
@@ -854,7 +856,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 /**
  * Send an I-Block (Application)
  */
-  MFRC522::StatusCode TCL_Transceive(TagInfo * tag, byte * sendData,
+  MFRC522<T>::StatusCode TCL_Transceive(TagInfo * tag, byte * sendData,
 				     byte sendLen, byte * backData,
 				     byte * backLen) {
     MFRC522::StatusCode result;
@@ -938,7 +940,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 /**
  * Send R-Block to the PICC.
  */
-  MFRC522::StatusCode TCL_TransceiveRBlock(TagInfo * tag, bool ack,
+  MFRC522<T>::StatusCode TCL_TransceiveRBlock(TagInfo * tag, bool ack,
 					   byte * backData, byte * backLen) {
     MFRC522::StatusCode result;
 
@@ -996,7 +998,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 /**
  * Send an S-Block to deselect the card.
  */
-  MFRC522::StatusCode TCL_Deselect(TagInfo * tag) {
+  MFRC522<T>::StatusCode TCL_Deselect(TagInfo * tag) {
     MFRC522::StatusCode result;
     byte outBuffer[4];
     byte outBufferSize = 1;
@@ -1029,9 +1031,9 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  *
  * @return PICC_Type
  */
-  MFRC522::PICC_Type PICC_GetType(TagInfo * tag	///< The TagInfo returned from PICC_Select().
+  MFRC522<T>::PICC_Type PICC_GetType(TagInfo * tag	///< The TagInfo returned from PICC_Select().
     ) {
-    // http://www.nxp.com/documents/application_note/AN10833.pdf 
+    // http://www.nxp.com/documents/application_note/AN10833.pdf
     // 3.2 Coding of Select Acknowledge (SAK)
     // ignore 8-bit (iso14443 starts with LSBit = bit 1)
     // fixes wrong type for manufacturer Infineon (http://nfc-tools.org/index.php?title=ISO14443A)
@@ -1182,7 +1184,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
 /**
  * Returns true if a PICC responds to PICC_CMD_REQA.
  * Only "new" cards in state IDLE are invited. Sleeping cards in state HALT are ignored.
- * 
+ *
  * @return bool
  */
   bool PICC_IsNewCardPresent()
@@ -1232,7 +1234,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
  * Returns true if a UID could be read.
  * Remember to call PICC_IsNewCardPresent(), PICC_RequestA() or PICC_WakeupA() first.
  * The read UID is available in the class variable uid.
- * 
+ *
  * @return bool
  */
   bool PICC_ReadCardSerial()
@@ -1245,7 +1247,7 @@ MFRC522Extended(MFRC522Intf & intf, uint8_t rst):MFRC522(intf, rst) {
     memcpy(uid.uidByte, tag.uid.uidByte, sizeof(tag.uid.uidByte));
 
     return (result == STATUS_OK);
-  }				// End 
+  }				// End
 };
 
 #endif

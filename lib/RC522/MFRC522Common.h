@@ -28,7 +28,7 @@ enum PCD_Register:byte
   DivIEnReg = 0x03,		// enable and disable interrupt request control bits
   ComIrqReg = 0x04,		// interrupt request bits
   DivIrqReg = 0x05,		// interrupt request bits
-  ErrorReg = 0x06,		// error bits showing the error status of the last command executed 
+  ErrorReg = 0x06,		// error bits showing the error status of the last command executed
   Status1Reg = 0x07,		// communication status bits
   Status2Reg = 0x08,		// receiver and transmitter status bits
   FIFODataReg = 0x09,		// input and output of 64 byte FIFO buffer
@@ -41,7 +41,7 @@ enum PCD_Register:byte
 
   // Page 1: Command
   //              0x10      // reserved for future use
-  ModeReg = 0x11,		// defines general modes for transmitting and receiving 
+  ModeReg = 0x11,		// defines general modes for transmitting and receiving
   TxModeReg = 0x12,		// defines transmission data rate and framing
   RxModeReg = 0x13,		// defines reception data rate and framing
   TxControlReg = 0x14,		// controls the logical behavior of the antenna driver pins TX1 and TX2
@@ -65,7 +65,7 @@ enum PCD_Register:byte
   ModWidthReg = 0x24,		// controls the ModWidth setting?
   //              0x25      // reserved for future use
   RFCfgReg = 0x26,		// configures the receiver gain
-  GsNReg = 0x27,		// selects the conductance of the antenna driver pins TX1 and TX2 for modulation 
+  GsNReg = 0x27,		// selects the conductance of the antenna driver pins TX1 and TX2 for modulation
   CWGsPReg = 0x28,		// defines the conductance of the p-driver output during periods of no modulation
   ModGsPReg = 0x29,		// defines the conductance of the p-driver output during periods of modulation
   TModeReg = 0x2A,		// defines settings for the internal timer
@@ -151,7 +151,7 @@ enum MIFARE_Misc
 enum PICC_Type:byte
 {
   PICC_TYPE_UNKNOWN,
-  PICC_TYPE_ISO_14443_4,	// PICC compliant with ISO/IEC 14443-4 
+  PICC_TYPE_ISO_14443_4,	// PICC compliant with ISO/IEC 14443-4
   PICC_TYPE_ISO_18092,		// PICC compliant with ISO/IEC 18092 (NFC)
   PICC_TYPE_MIFARE_MINI,	// MIFARE Classic protocol, 320 bytes
   PICC_TYPE_MIFARE_1K,		// MIFARE Classic protocol, 1KB

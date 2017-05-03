@@ -82,13 +82,13 @@
 #include <stdlib.h>
 #include "SPI.h"
 #include "EEPROM.h"
-#include "MFRC522.h"
+#include "MFRC522Ultralight.h"
 #include "MFRC522Intf.h"
 #include "UserManager.h"
 #include "Secrets.h"
 
 MFRC522IntfSpi mfrcIntf(SPI, SPI_CS_PIN);
-MFRC522<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+MFRC522Ultralight<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
@@ -218,7 +218,7 @@ void loop()
             }
 
             // buffer bytes 0-3 contain little endian uint32_t app id
-            uint32_t receivedAppId = *((uint32_t*)buffer);
+            uint32_t receivedAppId = *reinterpret_cast<uint32_t*>(buffer);
             if (receivedAppId != APPLICATION_ID) {
               Utils::Print("Card registered to different application: ");
               Utils::PrintHex32(receivedAppId, LF);
