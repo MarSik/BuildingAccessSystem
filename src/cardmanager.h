@@ -55,7 +55,7 @@ public:
      * @return
      */
     bool personalize_card() const;
-    bool reset_card() const;
+    bool reset_card() const { return false; }
 
     /**
      * @brief set_rule changes the rule for the resource that is stored on the card
@@ -78,7 +78,7 @@ public:
      * @param door
      * @return true or false
      */
-    bool authorize(uint8_t dow, uint8_t hour, uint8_t door) const;
+    bool authorize(uint8_t dow, uint8_t hour, uint8_t door) const { return false; }
 protected:
     const uint32_t APPID = APPLICATION_ID;
     const uint8_t APPID_PAGE = 0x04;

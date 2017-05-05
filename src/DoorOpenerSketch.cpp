@@ -85,7 +85,7 @@
 #include "EEPROM.h"
 #include "MFRC522Ultralight.h"
 #include "MFRC522Intf.h"
-#include "UserManager.h"
+#include "Utils.h"
 #include "Secrets.h"
 #include "cardmanager.h"
 
@@ -235,7 +235,7 @@ bool ReadCard(uint64_t* uid)
 // Waits for the user to approximate the card to the reader
 // Timeout = 30 seconds
 // Fills in pk_Card competely, but writes only the UID to pk_User.
-bool WaitForCard(kUser* pk_User, uint64_t* pk_Card)
+bool WaitForCard(uint64_t* pk_Card)
 {
     Utils::Print("Please approximate the card to the reader now!\r\nYou have 30 seconds. Abort with ESC.\r\n");
     uint64_t u64_Start = Utils::GetMillis64();
@@ -387,11 +387,10 @@ void SetKey(const char* key)
 }
 
 // Stores a new user and his card in the EEPROM of the Teensy
-void AddCardToEeprom(const char* s8_UserName)
+void AddCardToEeprom()
 {
-    kUser k_User;
     uint64_t cardId;
-    if (!WaitForCard(&k_User, &cardId))
+    if (!WaitForCard(&cardId))
         return;
 
     // First the entire memory of s8_Name is filled with random data.
@@ -399,18 +398,20 @@ void AddCardToEeprom(const char* s8_UserName)
     // The result is for example: s8_Name[NAME_BUF_SIZE] = { 'P', 'e', 't', 'e', 'r', 0, 0xDE, 0x45, 0x70, 0x5A, 0xF9, 0x11, 0xAB }
     // The string operations like stricmp() will only read up to the terminating zero,
     // but the application master key is derived from user name + random data.
-    Utils::GenerateRandom((byte*)k_User.s8_Name, NAME_BUF_SIZE);
-    strcpy(k_User.s8_Name, s8_UserName);
+    // Utils::GenerateRandom((byte*)k_User.s8_Name, NAME_BUF_SIZE);
+    // strcpy(k_User.s8_Name, s8_UserName);
 
     // Utils::Print("User + Random data: ");
     // Utils::PrintHexBuf((byte*)k_User.s8_Name, NAME_BUF_SIZE, LF);
 
-    kUser k_Found;
-    if (UserManager::FindUser(k_User.ID.u64, &k_Found))
-    {
-        Utils::Print("This card has already been stored for user ");
-        Utils::Print(k_Found.s8_Name, LF);
+    if (!mfrc522.UltralightC_Authenticate(DEFAULT_UL_KEY)) {
+        Utils::Print("Card already encrypted, please use blank card", LF);
+        mfrc522.PCD_AntennaOff();
         return;
+    }
+
+    if (cardManager.check_valid()) {
+        Utils::Print("Card already personalized in the past", LF);
     }
 
     if (mfrc522.UltralightC_ChangeKey(APPLICATION_KEY) != STATUS_OK) {
@@ -419,11 +420,6 @@ void AddCardToEeprom(const char* s8_UserName)
     }
 
     cardManager.personalize_card();
-
-    // By default a new user can open door one
-    k_User.u8_Flags = DOOR_ONE;
-
-    UserManager::StoreNewUser(&k_User);
 }
 
 void ClearEeprom()
@@ -433,16 +429,13 @@ void ClearEeprom()
     if (!WaitForKeyYesNo())
         return;
 
-    UserManager::DeleteAllUsers();
     Utils::Print("All cards have been deleted.\r\n");
 }
 
 void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
 {
     Utils::Print("Checking authorization.", LF);
-
-    kUser k_User;
-    if (!UserManager::FindUser(*cardId, &k_User))
+    if (!cardManager.authorize(0, 0, DOOR_ID))
     {
         Utils::Print("Unknown person tries to open the door: ");
         Utils::PrintHexBuf((byte*)cardId, 7, LF);
@@ -450,34 +443,10 @@ void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
         return;
     }
 
-    // TODO XXX Check card authorization
-
-    switch (k_User.u8_Flags & DOOR_BOTH)
-    {
-        case DOOR_ONE:  Utils::Print("Opening door 1 for ");     break;
-        case DOOR_TWO:  Utils::Print("Opening door 2 for ");     break;
-        case DOOR_BOTH: Utils::Print("Opening door 1 + 2 for "); break;
-        default:        Utils::Print("No door specified for ");  break;
-    }
-    Utils::Print(k_User.s8_Name, LF);
-
     SetLED(LED_GREEN);
-    if (k_User.u8_Flags & DOOR_ONE)
-    {
-        Utils::WritePin(DOOR_1_PIN, HIGH);
-        LongDelay(OPEN_INTERVAL);
-        Utils::WritePin(DOOR_1_PIN, LOW);
-    }
-    if ((k_User.u8_Flags & DOOR_BOTH) == DOOR_BOTH)
-    {
-        LongDelay(500); // make a pause between activation of the relais
-    }
-    if (k_User.u8_Flags & DOOR_TWO)
-    {
-        Utils::WritePin(DOOR_2_PIN, HIGH);
-        LongDelay(OPEN_INTERVAL);
-        Utils::WritePin(DOOR_2_PIN, LOW);
-    }
+    Utils::WritePin(DOOR_1_PIN, HIGH);
+    LongDelay(OPEN_INTERVAL);
+    Utils::WritePin(DOOR_1_PIN, LOW);
     LongDelay(1000);
     SetLED(LED_OFF);
 
@@ -487,7 +456,6 @@ void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
 
 void OnCommandReceived(bool b_PasswordValid)
 {
-    kUser k_User;
     char* s8_Parameter;
 
     gs8_CommandBuffer[gu32_CommandPos++] = 0;
@@ -580,14 +548,14 @@ void OnCommandReceived(bool b_PasswordValid)
 
         if (stricmp(gs8_CommandBuffer, "LIST") == 0)
         {
-            UserManager::ListAllUsers();
+            // TODO list black and whitelists
             return;
         }
 
             if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
             {
-                //if (RestoreDesfireCard()) Utils::Print("Restore success\r\n");
-                //else                      Utils::Print("Restore failed\r\n");
+                if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
+                else                          Utils::Print("Restore failed\r\n");
                 mfrc522.PCD_AntennaOff();
                 return;
             }
@@ -603,55 +571,10 @@ void OnCommandReceived(bool b_PasswordValid)
 
         if (strnicmp(gs8_CommandBuffer, "ADD", 3) == 0)
         {
-            if (!ParseParameter(gs8_CommandBuffer + 3, &s8_Parameter, 3, NAME_BUF_SIZE -1))
-                return;
-
-            AddCardToEeprom(s8_Parameter);
+            AddCardToEeprom();
 
             // Required! Otherwise the next ReadPassiveTargetId() does not detect the card and the door opens after adding a user.
             mfrc522.PCD_AntennaOff();
-            return;
-        }
-
-        if (strnicmp(gs8_CommandBuffer, "DEL", 3) == 0)
-        {
-            if (!ParseParameter(gs8_CommandBuffer + 3, &s8_Parameter, 3, NAME_BUF_SIZE -1))
-                return;
-
-            if (!UserManager::DeleteUser(0, s8_Parameter))
-                Utils::Print("Error: User not found.\r\n");
-
-            return;
-        }
-
-        if (strnicmp(gs8_CommandBuffer, "DOOR12", 6) == 0) // FIRST !!!
-        {
-            if (!ParseParameter(gs8_CommandBuffer + 6, &s8_Parameter, 3, NAME_BUF_SIZE -1))
-                return;
-
-            if (!UserManager::SetUserFlags(s8_Parameter, DOOR_BOTH))
-                Utils::Print("Error: User not found.\r\n");
-
-            return;
-        }
-        if (strnicmp(gs8_CommandBuffer, "DOOR1", 5) == 0) // AFTER !!!
-        {
-            if (!ParseParameter(gs8_CommandBuffer + 5, &s8_Parameter, 3, NAME_BUF_SIZE -1))
-                return;
-
-            if (!UserManager::SetUserFlags(s8_Parameter, DOOR_ONE))
-                Utils::Print("Error: User not found.\r\n");
-
-            return;
-        }
-        if (strnicmp(gs8_CommandBuffer, "DOOR2", 5) == 0)
-        {
-            if (!ParseParameter(gs8_CommandBuffer + 5, &s8_Parameter, 3, NAME_BUF_SIZE -1))
-                return;
-
-            if (!UserManager::SetUserFlags(s8_Parameter, DOOR_TWO))
-                Utils::Print("Error: User not found.\r\n");
-
             return;
         }
 
@@ -687,14 +610,10 @@ void OnCommandReceived(bool b_PasswordValid)
     Utils::Print(LF);
     Utils::Print("Compiled for Ultralight C cards (3K3DES - 168 bit encryption used)\r\n");
 
-    int s32_MaxUsers = UserManager::GetMaxUsers();
-    char Buf[80];
-    sprintf(Buf, "Max %d users with a max name length of %d chars fit into the EEPROM\r\n", s32_MaxUsers, NAME_BUF_SIZE - 1);
-    Utils::Print(Buf);
-
     Utils::Print("Terminal access is password protected: ");
     Utils::Print(PASSWORD[0] ? "Yes\r\n" : "No\r\n");
 
+    char Buf[80];
     uint32_t u32_Volt = MeasureVoltage(VOLTAGE_MEASURE_PIN);
     sprintf(Buf, "Battery voltage: %d.%d Volt\r\n",  (int)(u32_Volt/10), (int)(u32_Volt%10));
     Utils::Print(Buf);
@@ -827,7 +746,6 @@ void loop()
             break;
         }
 
-        kUser k_User;
         uint64_t uid;
         if (ReadCard(&uid))
         {
