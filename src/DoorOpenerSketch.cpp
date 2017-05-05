@@ -79,16 +79,19 @@
 // ######################################################################################
 
 #include <Arduino.h>
-#include <stdlib.h>
+#include <cstdlib>
+#include <algorithm>
 #include "SPI.h"
 #include "EEPROM.h"
 #include "MFRC522Ultralight.h"
 #include "MFRC522Intf.h"
 #include "UserManager.h"
 #include "Secrets.h"
+#include "cardmanager.h"
 
 MFRC522IntfSpi mfrcIntf(SPI, SPI_CS_PIN);
 MFRC522Ultralight<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+CardManager<MFRC522IntfSpi> cardManager(mfrc522);
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
@@ -273,7 +276,7 @@ void LongDelay(int s32_Interval)
     {
         CheckBattery();
 
-        int s32_Delay = min(100, s32_Interval);
+        int s32_Delay = std::min(100, s32_Interval);
         Utils::DelayMilli(s32_Delay);
 
         s32_Interval -= s32_Delay;
@@ -415,11 +418,7 @@ void AddCardToEeprom(const char* s8_UserName)
       return;
     }
 
-    byte buff[4] = {0x80, 0x00, 0x00, 0x00}; // Allow access, no conditions
-
-    mfrc522.UltralightC_SetAuthProtection(0x3);
-    mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_APPID, (byte*)&APPLICATION_ID, 4);
-    mfrc522.MIFARE_Ultralight_Write(CARD_PAGE_DOOR1, buff, 4);
+    cardManager.personalize_card();
 
     // By default a new user can open door one
     k_User.u8_Flags = DOOR_ONE;
@@ -841,25 +840,9 @@ void loop()
               Utils::Print("Card successfully authenticated!", LF);
             }
 
-            byte buffer[18] = {0, };
-            byte bufferLen = 18;
-            StatusCode status = mfrc522.MIFARE_Read(CARD_PAGE_APPID, buffer, &bufferLen);
-            if (status != STATUS_OK) {
-              Utils::Print("Could not get card application data: ");
-              Utils::PrintDec(status, LF);
-              break;
-            }
-
-            // buffer bytes 0-3 contain little endian uint32_t app id (byte 0 is LSB)
-            uint32_t receivedAppId = buffer[3];
-            receivedAppId = (receivedAppId << 8) | buffer[2];
-            receivedAppId = (receivedAppId << 8) | buffer[1];
-            receivedAppId = (receivedAppId << 8) | buffer[0];
-
-            if (receivedAppId != APPLICATION_ID) {
-              Utils::Print("Card registered to different application: ");
-              Utils::PrintHex32(receivedAppId, LF);
-              break;
+            if (!cardManager.check_valid()) {
+                Utils::Print("Card not configured for this application.", LF);
+                break;
             }
 
             // TODO check blacklist

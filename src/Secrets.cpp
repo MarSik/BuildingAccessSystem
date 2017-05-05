@@ -1,24 +1,15 @@
-/**************************************************************************
-
-    @author   Elmü
-    This file contains secret values for encryption.
-
-**************************************************************************/
-
-#ifndef SECRETS_H
-#define SECRETS_H
-
 #include <Arduino.h>
+#include "Secrets.h"
 
 // This reader is used to open door group no. 1
-extern byte DOOR_ID;
+byte DOOR_ID = 1;
 
 // This 2K3DES key is the default key for pristine Ultralight C cards stored on the card as BREAKMEIFYOUCAN!
-extern const byte DEFAULT_UL_KEY[16];
+const byte DEFAULT_UL_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A', 'C', 'U', 'O', 'Y', 'F'};
 
 // This 2K3DES key is used to derive a 16 byte application master key from the UID of the card and the user name.
 // The purpose is that each card will have it's unique application master key that can be calculated from known values.
-extern byte APPLICATION_KEY[16];
+byte APPLICATION_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A', 'C', 'U', 'O', 'Y', 'F'};
 
 // -----------------------------------------------------------------------------------------------------------
 
@@ -31,6 +22,4 @@ extern byte APPLICATION_KEY[16];
 //   = 0000 01110 01111 01011 01010 0001 1000
 //   = 0000 0111 0011 1101 0110 1010 0001 1000
 //   = Ox073D6A18
-extern const uint32_t APPLICATION_ID;
-
-#endif
+const uint32_t APPLICATION_ID = 0x073D6A18; // 0OPLK18
