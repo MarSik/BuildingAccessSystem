@@ -30,18 +30,21 @@ struct AccessRule {
     int _reserved : 8;
     int crc : 8;
 
-    const static uint8_t CHECKSUM_BASE = 0x55;
+    void set_default(const DefaultRule rule) { default_rule = rule; }
 
+    void add_day(const uint8_t dow) { this->dow |= dow; }
+    void add_hour(const uint8_t hour) { this->hour |= 1 << (hour / 3); }
+
+    void remove_day(const uint8_t dow) { this->dow &= ~dow; }
+    void remove_hour(const uint8_t hour) { this->hour &= ~(1 << (hour / 3)); }
+
+    uint32_t serialize() const;
+    bool deserialize(const uint32_t value);
+
+    const static uint8_t CHECKSUM_BASE = 0x55;
+private:
     uint8_t compute_crc();
     bool check_crc() const;
-
-    void set_default(DefaultRule rule) { default_rule = rule; }
-
-    void add_day(uint8_t dow) { this->dow |= dow; }
-    void add_hour(uint8_t hour) { this->hour |= 1 << (hour / 3); }
-
-    void remove_day(uint8_t dow) { this->dow &= ~dow; }
-    void remove_hour(uint8_t hour) { this->hour &= ~(1 << (hour / 3)); }
 };
 
 template <typename Pcd>
@@ -63,7 +66,7 @@ public:
      * @param rule
      * @return
      */
-    bool set_rule(uint8_t door, AccessRule rule) const;
+    bool set_rule(const uint8_t door, const AccessRule rule) const;
 
     /**
      * @brief check_valid makes sure the card is configured for the application
@@ -78,12 +81,13 @@ public:
      * @param door
      * @return true or false
      */
-    bool authorize(uint8_t dow, uint8_t hour, uint8_t door) const { return false; }
+    bool authorize(const uint8_t dow, const uint8_t hour, const uint8_t door) const { return false; }
+
 protected:
     const uint32_t APPID = APPLICATION_ID;
     const uint8_t APPID_PAGE = 0x04;
 
-    etl::array<uint8_t, 4> DOORS = {{0x05, 0x06, 0x07, 0x08}}; // double braces to workaround GCC bug 65815
+    etl::array<const uint8_t, 4> DOORS = {{ 0x05, 0x06, 0x07, 0x08 }}; // double braces to workaround GCC bug 65815
 
 private:
     MFRC522Ultralight<Pcd> &pcd;
@@ -92,10 +96,10 @@ private:
 template <typename Pcd>
 bool CardManager<Pcd>::personalize_card() const
 {
-    byte buff[4] = {0x00, 0x00, 0x00, AccessRule::CHECKSUM_BASE}; // Forbid access, no conditions
+    const byte buff[4] = {0x00, 0x00, 0x00, AccessRule::CHECKSUM_BASE}; // Forbid access, no conditions
 
     pcd.UltralightC_SetAuthProtection(0x3);
-    pcd.MIFARE_Ultralight_Write(APPID_PAGE, (byte*)&APPID, 4);
+    pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[0], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[1], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[2], buff, 4);

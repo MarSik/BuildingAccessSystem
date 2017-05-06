@@ -30,18 +30,16 @@
 // The software SPI SSEL pin (Chip Select)
 #define SPI_CS_PIN        24
 
-// This Arduino / Teensy pin is connected to the PN532 RSTPDN pin (reset the PN532)
-// When a communication error with the PN532 is detected the board is reset automatically.
+// This Arduino / Teensy pin is connected to the reader RSTPDN pin (reset the reader)
+// When a communication error with the reader is detected the board is reset automatically.
 #define RESET_PIN         3
 
-// TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
 // The green LED flashes fast while no card is present and flashes 1 second when opening the door.
 #define LED_GREEN_PIN    39
 
-// TODO use PN532 GPIOs to control LEDs on the terminal side
 // This Arduino / Teensy pin is connected to the red LED in a two color LED.
-// The red LED flashes slowly when a communication error occurred with the PN532 chip and when an unauthorized person tries to open the door.
+// The red LED flashes slowly when a communication error occurred with the reader chip and when an unauthorized person tries to open the door.
 // It flashes fast when a power failure has been detected. (Charging battery failed)
 #define LED_RED_PIN      30
 
@@ -65,7 +63,7 @@
 #define OPEN_INTERVAL   1000
 
 // This is the interval that the RF field is switched off to save battery.
-// The shorter this interval, the more power is consumed by the PN532.
+// The shorter this interval, the more power is consumed by the reader.
 // The longer  this interval, the longer the user has to wait until the door opens.
 // The recommended interval is 1000 ms.
 // Please note that the slowness of reading a Desfire card is not caused by this interval.
@@ -105,27 +103,12 @@ enum eLED
     LED_GREEN,
 };
 
-enum eCardType
-{
-    CARD_Unknown   = 0, // Mifare Classic or other card
-    CARD_Desfire   = 1, // A Desfire card with normal 7 byte UID  (bit 0)
-    CARD_DesRandom = 3, // A Desfire card with 4 byte random UID  (bit 0 + 1)
-};
-
-struct kCard
-{
-    byte     u8_UidLength;   // UID = 4 or 7 bytes
-    byte     u8_KeyVersion;  // for Desfire random ID cards
-    bool      b_PN532_Error; // true -> the error comes from the PN532, false -> crypto error
-    eCardType e_CardType;
-};
-
 // global variables
 char       gs8_CommandBuffer[500];  // Stores commands typed by the user via Terminal and the password
 uint32_t   gu32_CommandPos = 0;     // Index in gs8_CommandBuffer
 uint64_t   gu64_LastPasswd = 0;     // Timestamp when the user has enetered the password successfully
 uint64_t   gu64_LastID     = 0;     // The last card UID that has been read by the RFID reader
-bool       gb_InitSuccess  = false; // true if the PN532 has been initialized successfully
+bool       gb_InitSuccess  = false; // true if the reader has been initialized successfully
 
 void SetLED(eLED e_LED)
 {
@@ -197,27 +180,24 @@ bool WaitForKeyYesNo()
 }
 
 // Reads the card in the RF field.
-// In case of a Random ID card reads the real UID of the card (requires PICC authentication)
-// ATTENTION: If no card is present, this function returns true. This is not an error. (check that pk_Card->u8_UidLength > 0)
-// pk_Card->u8_KeyVersion is > 0 if a random ID card did a valid authentication with SECRET_PICC_MASTER_KEY
-// pk_Card->b_PN532_Error is set true if the error comes from the PN532.
+// ATTENTION: If no card is present, this function returns false. This is not an error.
 bool ReadCard(uint64_t* uid)
 {
   // Enable field
   mfrc522.PCD_AntennaOn();
   delay(100);
 
-        // Look for new cards
-        if ( ! mfrc522.PICC_IsNewCardPresent()) {
-                return false;
-        }
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent()) {
+      return false;
+  }
 
   Serial.println("Card detected...");
 
-        // Select one of the cards
-        if ( ! mfrc522.PICC_ReadCardSerial()) {
-                return false;
-        }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
+      return false;
+  }
 
   // Convert the card id to binary
   *uid = 0;
@@ -227,8 +207,8 @@ bool ReadCard(uint64_t* uid)
   }
   //Utils::PrintHex32(*uid, LF);
 
-        // Dump debug info about the card; PICC_HaltA() is automatically called
-        mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
+  // Dump debug info about the card; PICC_HaltA() is automatically called
+  mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
   return true;
 }
 
@@ -287,7 +267,7 @@ void LongDelay(int s32_Interval)
 // If the LED does not flash permanently this means that there is a severe error.
 // Additionally the LED will flash long (for 1 second) when the door is opened.
 // -----------------------------------------------------------------------------
-// The red LED shows a communication error with the PN532 (flash very slow),
+// The red LED shows a communication error with the reader (flash very slow),
 // or someone not authorized trying to open the door (flash for 1 second)
 // or on power failure the red LED flashes shortly.
 void FlashLED(eLED e_LED, int s32_Interval)
@@ -297,14 +277,14 @@ void FlashLED(eLED e_LED, int s32_Interval)
     SetLED(LED_OFF);
 }
 
-// Reset the PN532 chip and initialize, set gb_InitSuccess = true on success
+// Reset the reader chip and initialize, set gb_InitSuccess = true on success
 // If b_ShowError == true -> flash the red LED very slwoly
 void InitReader(bool b_ShowError)
 {
     if (b_ShowError)
     {
         SetLED(LED_RED);
-        Utils::Print("Communication Error -> Reset PN532\r\n");
+        Utils::Print("Communication Error -> Reset reader\r\n");
     }
 
     do // pseudo loop (just used for aborting with break;)
@@ -506,7 +486,7 @@ void OnCommandReceived(bool b_PasswordValid)
         InitReader(false);
         if (gb_InitSuccess)
         {
-            Utils::Print("PN532 initialized successfully\r\n"); // The chip has reponded (ACK) as expected
+            Utils::Print("Reader initialized successfully\r\n"); // The chip has reponded (ACK) as expected
             return;
         }
     }
@@ -514,11 +494,16 @@ void OnCommandReceived(bool b_PasswordValid)
     // This command must work even if gb_InitSuccess == false
     if (stricmp(gs8_CommandBuffer, "TESTAUTH") == 0)
     {
-      if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
-        Utils::Print("Authentication to card succeeded", LF);
-      } else {
-        Utils::Print("Authentication to card failed", LF);
-      }
+        uint64_t cardId;
+        Utils::Print("Waiting for card...", LF);
+        if (!WaitForCard(&cardId))
+            return;
+
+        if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+            Utils::Print("Authentication to card succeeded", LF);
+        } else {
+            Utils::Print("Authentication to card failed", LF);
+        }
     }
 
     // This command must work even if gb_InitSuccess == false
@@ -552,22 +537,21 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-            if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
-            {
-                if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
-                else                          Utils::Print("Restore failed\r\n");
-                mfrc522.PCD_AntennaOff();
-                return;
-            }
+        if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
+        {
+            if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
+            else                          Utils::Print("Restore failed\r\n");
+            mfrc522.PCD_AntennaOff();
+            return;
+        }
 
-            if (stricmp(gs8_CommandBuffer, "MAKERANDOM") == 0)
-            {
+        if (stricmp(gs8_CommandBuffer, "MAKERANDOM") == 0)
+        {
                 /*if (MakeRandomCard()) Utils::Print("MakeRandom success\r\n");
                 else                  Utils::Print("MakeRandom failed\r\n");*/
-                mfrc522.PCD_AntennaOff();
-                return;
-            }
-
+            mfrc522.PCD_AntennaOff();
+            return;
+        }
 
         if (strnicmp(gs8_CommandBuffer, "ADD", 3) == 0)
         {
@@ -585,24 +569,19 @@ void OnCommandReceived(bool b_PasswordValid)
         Utils::Print("Usage:\r\n");
         Utils::Print(" KEY    {key}   : Set the application key\r\n");
         Utils::Print(" CLEAR          : Clear all users and their cards from the EEPROM\r\n");
-        Utils::Print(" ADD    {user}  : Add a user and his card to the EEPROM\r\n");
+        Utils::Print(" ADD            : Add a user and his card to the EEPROM\r\n");
         Utils::Print(" DEL    {user}  : Delete a user and his card from the EEPROM\r\n");
         Utils::Print(" LIST           : List all users that are stored in the EEPROM\r\n");
-        Utils::Print(" DOOR1  {user}  : Open only door 1 for this user\r\n");
-        Utils::Print(" DOOR2  {user}  : Open only door 2 for this user\r\n");
-        Utils::Print(" DOOR12 {user}  : Open both doors for this user\r\n");
-
-            Utils::Print(" RESTORE        : Removes the master key and the application from the card\r\n");
-            Utils::Print(" MAKERANDOM     : Converts the card into a Random ID card (FOREVER!)\r\n");
+        Utils::Print(" RESTORE        : Removes the master key and the application from the card\r\n");
     }
     else // !gb_InitSuccess
     {
-        Utils::Print("FATAL ERROR: The PN532 did not respond. (Board initialization failed)\r\n");
+        Utils::Print("FATAL ERROR: The reader did not respond. (Board initialization failed)\r\n");
         Utils::Print("Usage:\r\n");
     }
 
     // In case of a fatal error only these 2 commands are available:
-    Utils::Print(" RESET          : Reset the PN532 and run the chip initialization anew\r\n");
+    Utils::Print(" RESET          : Reset the reader and run the chip initialization anew\r\n");
     Utils::Print(" DEBUG {level}  : Set debug level (0= off, 1= normal, 2= RxTx data, 3= details)\r\n");
 
     if (PASSWORD[0] != 0)
@@ -792,8 +771,8 @@ void loop()
     while (false);
 
     // Turn off the RF field to save battery
-    // When the RF field is on,  the PN532 board consumes approx 110 mA.
-    // When the RF field is off, the PN532 board consumes approx 18 mA.
+    // When the RF field is on,  the reader board consumes approx 110 mA.
+    // When the RF field is off, the reader board consumes approx 18 mA.
     mfrc522.PCD_AntennaOff();
 
     u64_LastRead = Utils::GetMillis64();

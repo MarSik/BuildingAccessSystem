@@ -5,16 +5,16 @@
 
 template < class T > class MFRC522Ultralight:public MFRC522Mifare < T > {
 public:
-  MFRC522Ultralight(T & intf, byte resetPowerDownPin) : MFRC522Mifare<T>(intf, resetPowerDownPin) {}
+  MFRC522Ultralight(T & intf, const byte resetPowerDownPin) : MFRC522Mifare<T>(intf, resetPowerDownPin) {}
 
   /**
    * Writes a 4 byte page to the active MIFARE Ultralight PICC.
    *
    * @return STATUS_OK on success, STATUS_??? otherwise.
    */
-    StatusCode MIFARE_Ultralight_Write(byte page,	///< The page (2-15) to write to.
-  				     byte * buffer,	///< The 4 bytes to write to the PICC
-  				     byte bufferSize	///< Buffer size, must be at least 4 bytes. Exactly 4 bytes are written.
+    StatusCode MIFARE_Ultralight_Write(const byte page,	///< The page (2-15) to write to.
+                                     const byte * const buffer,	///< The 4 bytes to write to the PICC
+                                     const byte bufferSize	///< Buffer size, must be at least 4 bytes. Exactly 4 bytes are written.
       )
     {
       StatusCode result;
