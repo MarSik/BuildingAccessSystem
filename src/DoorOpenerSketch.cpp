@@ -32,7 +32,7 @@
 
 // This Arduino / Teensy pin is connected to the reader RSTPDN pin (reset the reader)
 // When a communication error with the reader is detected the board is reset automatically.
-#define RESET_PIN         3
+#define RESET_PIN         2
 
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
 // The green LED flashes fast while no card is present and flashes 1 second when opening the door.
@@ -87,9 +87,9 @@
 #include "Secrets.h"
 #include "cardmanager.h"
 
-MFRC522IntfSpi mfrcIntf(SPI, SPI_CS_PIN);
-MFRC522Ultralight<MFRC522IntfSpi> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
-CardManager<MFRC522IntfSpi> cardManager(mfrc522);
+MFRC522IntfSerial mfrcIntf(Serial1);
+MFRC522Ultralight<MFRC522IntfSerial> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+CardManager<MFRC522IntfSerial> cardManager(mfrc522);
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
@@ -193,9 +193,17 @@ bool ReadCard(uint64_t* uid)
   }
 
   Serial.println("Card detected...");
+  mfrc522.debug = true;
 
   // Select one of the cards
-  if ( ! mfrc522.PICC_ReadCardSerial()) {
+  StatusCode result = mfrc522.PICC_Select(&mfrc522.uid);
+  if (result == STATUS_INTERNAL_ERROR || result == STATUS_ERROR || result == STATUS_TIMEOUT) {
+      Serial.print("Select failed: ");
+      Serial.println(result, HEX);
+      gb_InitSuccess = false;
+      return false;
+  }
+  if ( ! result != STATUS_OK) {
       return false;
   }
 
@@ -205,7 +213,7 @@ bool ReadCard(uint64_t* uid)
     *uid <<= 8;
     *uid += mfrc522.uid.uidByte[idx];
   }
-  //Utils::PrintHex32(*uid, LF);
+  Utils::PrintHex32(*uid, LF);
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
   mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
@@ -291,13 +299,13 @@ void InitReader(bool b_ShowError)
     {
         gb_InitSuccess = false;
 
-  Serial.println("Initializing reader...");
-        mfrc522.PCD_Init();		// Init MFRC522
-  Serial.println("Getting reader info..");
+        Serial.println("Initializing reader...");
+        if (!mfrc522.PCD_Init()) return;		// Init MFRC522
+        Serial.println("Getting reader info..");
         mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
-  Serial.println("Setting gain to maximum");
-  mfrc522.PCD_SetAntennaGain(PCD_RxGain::RxGain_avg);
-  mfrc522.PCD_WriteRegister(PCD_Register::RxThresholdReg, 0x22);
+        Serial.println("Setting gain to maximum");
+        mfrc522.PCD_SetAntennaGain(PCD_RxGain::RxGain_avg);
+        if (!mfrc522.PCD_WriteRegister(PCD_Register::RxThresholdReg, 0x22)) return;
         Serial.println(F("Reader initialized."));
 
         // XXX Set the max number of retry attempts to read from a card.
@@ -676,21 +684,14 @@ void setup()
     FlashLED(LED_GREEN, 1000);
 
     // Open USB serial port
-    SerialClass::Begin(115200);
+    Serial.setBufferSize(64, 64);
+    Serial.begin(115200);
     Utils::Print("System initializing\n");
 
     // Use 12 bit resolution for the analog input (ADC)
     analogReadResolution(ANALOG_RESOLUTION);
     // Use the internal reference voltage (1.5V) as analog reference
     // analogReference(INTERNAL1V5); // TODO recompute the rest of the code to the proper Tiva references
-
-    //Utils::Print("UART reader port initialized\n");
-
-  SPI.begin();
-  SPI.setModule(3);
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE0);
-  SPI.setClockDivider(MFRC522_SPICLOCK);
 
     InitReader(false);
 }

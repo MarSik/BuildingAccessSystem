@@ -165,48 +165,49 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 // Basic interface functions for communicating with the MFRC522
 // - basically just proxy methods for the interface implementation
 /////////////////////////////////////////////////////////////////////////////////////
-  inline void PCD_WriteRegister(PCD_Register reg, byte value) const
+  inline boolean PCD_WriteRegister(PCD_Register reg, byte value) const
   {
-    intf.PCD_WriteRegister(reg, value);
+    return intf.PCD_WriteRegister(reg, value);
   }
-  inline void PCD_WriteRegister(PCD_Register reg, byte count, byte * values) const
+  inline boolean PCD_WriteRegister(PCD_Register reg, byte count, byte * values) const
   {
-    intf.PCD_WriteRegister(reg, count, values);
+    return intf.PCD_WriteRegister(reg, count, values);
   }
-  inline byte PCD_ReadRegister(PCD_Register reg) const
+  inline int PCD_ReadRegister(PCD_Register reg) const
   {
     return intf.PCD_ReadRegister(reg);
   }
-  inline void PCD_ReadRegister(PCD_Register reg, byte count, byte * values,
+  inline boolean PCD_ReadRegister(PCD_Register reg, byte count, byte * values,
 			       byte rxAlign = 0) const {
-    intf.PCD_ReadRegister(reg, count, values, rxAlign);
+    return intf.PCD_ReadRegister(reg, count, values, rxAlign);
   }
 
 
 /**
  * Sets the bits given in mask in register reg.
  */
-  void PCD_SetRegisterBitMask(PCD_Register reg,	///< The register to update. One of the PCD_Register enums.
+  boolean PCD_SetRegisterBitMask(PCD_Register reg,	///< The register to update. One of the PCD_Register enums.
 			      byte mask	///< The bits to set.
     ) const
   {
     byte tmp;
     tmp = PCD_ReadRegister(reg);
-    PCD_WriteRegister(reg, tmp | mask);	// set bit mask
+    if (tmp == -1) return false;
+    return PCD_WriteRegister(reg, tmp | mask);	// set bit mask
   }				// End PCD_SetRegisterBitMask()
 
 /**
  * Clears the bits given in mask from register reg.
  */
-  void PCD_ClearRegisterBitMask(PCD_Register reg,	///< The register to update. One of the PCD_Register enums.
+  boolean PCD_ClearRegisterBitMask(PCD_Register reg,	///< The register to update. One of the PCD_Register enums.
 				byte mask	///< The bits to clear.
     ) const
   {
     byte tmp;
     tmp = PCD_ReadRegister(reg);
-    PCD_WriteRegister(reg, tmp & (~mask));	// clear bit mask
+    if (tmp == -1) return false;
+    return PCD_WriteRegister(reg, tmp & (~mask));	// clear bit mask
   }				// End PCD_ClearRegisterBitMask()
-
 
 /**
  * Use the CRC coprocessor in the MFRC522 to calculate a CRC_A.
@@ -240,7 +241,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       }
     }
     // 89ms passed and nothing happend. Communication with the MFRC522 might be down.
-    return STATUS_TIMEOUT;
+    return STATUS_ERROR;
   }				// End PCD_CalculateCRC()
 
   /**
@@ -253,7 +254,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
    *
    * All keys are set to FFFFFFFFFFFFh at chip delivery.
    *
-   * @return STATUS_OK on success, STATUS_??? otherwise. Probably STATUS_TIMEOUT if you supply the wrong key.
+   * @return STATUS_OK on success, STATUS_??? otherwise. Probably STATUS_NOCARD if you supply the wrong key.
    */
     StatusCode PCD_Authenticate(byte command,	///< PICC_CMD_MF_AUTH_KEY_A or PICC_CMD_MF_AUTH_KEY_B
               byte blockAddr,	///< The block number. See numbering in the comments in the .h file.
@@ -300,82 +301,106 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 /**
  * Initializes the MFRC522 chip.
  */
-  void PCD_Init() const
+  bool PCD_Init() const
   {
     bool hardReset = false;
-
-    // Initialize interface
-    intf.init();
 
     // If a valid pin number has been set, pull device out of power down / reset state.
     if (_resetPowerDownPin != UINT8_MAX) {
       // Set the resetPowerDownPin as digital output, do not reset or power down.
       pinMode(_resetPowerDownPin, OUTPUT);
-
-      if (digitalRead(_resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
-	digitalWrite(_resetPowerDownPin, HIGH);	// Exit power down mode. This triggers a hard reset.
-	// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
-	delay(50);
-	hardReset = true;
-      }
+      digitalWrite(_resetPowerDownPin, LOW); // The MFRC522 chip is in power down mode.
+      Serial.println("HW Reset!");
+      delay(10);
+      digitalWrite(_resetPowerDownPin, HIGH);	// Exit power down mode. This triggers a hard reset.
+      Serial.print("Wait for boot after HW Reset!");
+      delay(50);
+      // Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
+      hardReset = true;
     }
+
+    Serial.print("HW Reset done ");
+    Serial.println(hardReset);
+
+    // Initialize interface
+    intf.init();
 
     if (!hardReset) {		// Perform a soft reset if we haven't triggered a hard reset above.
-      PCD_Reset();
+      if (!PCD_Reset()) return false;
     }
+
+    Serial.println("Reset done");
+    Serial.print("PCD version: ");
+    delay(100);
+
+    //intf.flush();
+    uint8_t ver = PCD_ReadRegister(VersionReg);
+    while(ver == 0xff || ver == 0) {
+        Serial.print(".");
+        ver = PCD_ReadRegister(VersionReg);
+    }
+
+    Serial.println(ver, HEX);
+
     // Reset baud rates
-    PCD_WriteRegister(TxModeReg, 0x00);
-    PCD_WriteRegister(RxModeReg, 0x00);
+    if (!PCD_WriteRegister(TxModeReg, 0x00)) return false;
+    if (!PCD_WriteRegister(RxModeReg, 0x00)) return false;
     // Reset ModWidthReg
-    PCD_WriteRegister(ModWidthReg, 0x26);
+    if (!PCD_WriteRegister(ModWidthReg, 0x26)) return false;
 
     // When communicating with a PICC we need a timeout if something goes wrong.
     // f_timer = 13.56 MHz / (2*TPreScaler+1) where TPreScaler = [TPrescaler_Hi:TPrescaler_Lo].
     // TPrescaler_Hi are the four low bits in TModeReg. TPrescaler_Lo is TPrescalerReg.
-    PCD_WriteRegister(TModeReg, 0x80);	// TAuto=1; timer starts automatically at the end of the transmission in all communication modes at all speeds
-    PCD_WriteRegister(TPrescalerReg, 0xA9);	// TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 => f_timer=40kHz, ie a timer period of 25μs.
-    PCD_WriteRegister(TReloadRegH, 0x03);	// Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
-    PCD_WriteRegister(TReloadRegL, 0xE8);
+    if (!PCD_WriteRegister(TModeReg, 0x80)) return false;	// TAuto=1; timer starts automatically at the end of the transmission in all communication modes at all speeds
+    if (!PCD_WriteRegister(TPrescalerReg, 0xA9)) return false;	// TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 => f_timer=40kHz, ie a timer period of 25μs.
+    if (!PCD_WriteRegister(TReloadRegH, 0x03)) return false;	// Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
+    if (!PCD_WriteRegister(TReloadRegL, 0xE8)) return false;
 
-    PCD_WriteRegister(TxASKReg, 0x40);	// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
-    PCD_WriteRegister(ModeReg, 0x3D);	// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
-    PCD_AntennaOn();		// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
+    if (!PCD_WriteRegister(TxASKReg, 0x40)) return false;	// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
+    if (!PCD_WriteRegister(ModeReg, 0x3D)) return false;	// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
+    if (!PCD_AntennaOn()) return false;		// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
+
+    return true;
   }				// End PCD_Init()
 
 /**
  * Performs a soft reset on the MFRC522 chip and waits for it to be ready again.
  */
-  void PCD_Reset() const
+  bool PCD_Reset() const
   {
-    PCD_WriteRegister(CommandReg, PCD_SoftReset);	// Issue the SoftReset command.
+    if (!PCD_WriteRegister(CommandReg, PCD_SoftReset)) return false;	// Issue the SoftReset command.
     // The datasheet does not mention how long the SoftRest command takes to complete.
     // But the MFRC522 might have been in soft power-down mode (triggered by bit 4 of CommandReg)
     // Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
     delay(50);
     // Wait for the PowerDown bit in CommandReg to be cleared
-    while (PCD_ReadRegister(CommandReg) & (1 << 4)) {
+    int status = PCD_ReadRegister(CommandReg);
+    while ((status != -1) && (status & (1 << 4))) {
       // PCD still restarting - unlikely after waiting 50ms, but better safe than sorry.
     }
+    return status != -1;
   }				// End PCD_Reset()
 
 /**
  * Turns the antenna on by enabling pins TX1 and TX2.
  * After a reset these pins are disabled.
  */
-  void PCD_AntennaOn() const
+  boolean PCD_AntennaOn() const
   {
-    byte value = PCD_ReadRegister(TxControlReg);
+    int value = PCD_ReadRegister(TxControlReg);
+    if (value == -1) return false;
     if ((value & 0x03) != 0x03) {
-      PCD_WriteRegister(TxControlReg, value | 0x03);
+      if (!PCD_WriteRegister(TxControlReg, value | 0x03)) return false;
     }
+    return true;
   }				// End PCD_AntennaOn()
 
 /**
  * Turns the antenna off by disabling pins TX1 and TX2.
  */
-  void PCD_AntennaOff() const
+  boolean PCD_AntennaOff() const
   {
-    PCD_ClearRegisterBitMask(TxControlReg, 0x03);
+    return PCD_ClearRegisterBitMask(TxControlReg, 0x03);
   }				// End PCD_AntennaOff()
 
 /**
@@ -532,14 +557,14 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     byte txLastBits = validBits ? *validBits : 0;
     byte bitFraming = (rxAlign << 4) + txLastBits;	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
 
-    PCD_WriteRegister(CommandReg, PCD_Idle);	// Stop any active command.
-    PCD_WriteRegister(ComIrqReg, 0x7F);	// Clear all seven interrupt request bits
-    PCD_WriteRegister(FIFOLevelReg, 0x80);	// FlushBuffer = 1, FIFO initialization
-    PCD_WriteRegister(FIFODataReg, sendLen, sendData);	// Write sendData to the FIFO
-    PCD_WriteRegister(BitFramingReg, bitFraming);	// Bit adjustments
-    PCD_WriteRegister(CommandReg, command);	// Execute the command
+    if (!PCD_WriteRegister(CommandReg, PCD_Idle)) return STATUS_ERROR;	// Stop any active command.
+    if (!PCD_WriteRegister(ComIrqReg, 0x7F)) return STATUS_ERROR;	// Clear all seven interrupt request bits
+    if (!PCD_WriteRegister(FIFOLevelReg, 0x80)) return STATUS_ERROR;	// FlushBuffer = 1, FIFO initialization
+    if (!PCD_WriteRegister(FIFODataReg, sendLen, sendData)) return STATUS_ERROR;	// Write sendData to the FIFO
+    if (!PCD_WriteRegister(BitFramingReg, bitFraming)) return STATUS_ERROR;	// Bit adjustments
+    if (!PCD_WriteRegister(CommandReg, command)) return STATUS_ERROR;	// Execute the command
     if (command == PCD_Transceive) {
-      PCD_SetRegisterBitMask(BitFramingReg, 0x80);	// StartSend=1, transmission of data starts
+        if (!PCD_SetRegisterBitMask(BitFramingReg, 0x80)) return STATUS_ERROR;	// StartSend=1, transmission of data starts
     }
     // Wait for the command to complete.
     // In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts when the PCD stops transmitting.
@@ -547,35 +572,56 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // TODO check/modify for other architectures than Arduino Uno 16bit
     uint16_t i;
     for (i = 2000; i > 0; i--) {
-      byte n = PCD_ReadRegister(ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
+      int n = PCD_ReadRegister(ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
+      if (n == -1) {
+          Serial.print("E1");
+          return STATUS_ERROR;
+      }
       if (n & waitIRq) {	// One of the interrupts that signal success has been set.
 	break;
       }
       if (n & 0x01) {		// Timer interrupt - nothing received in 25ms
-	return STATUS_TIMEOUT;
+        return STATUS_NOCARD;
       }
     }
     // 35.7ms and nothing happend. Communication with the MFRC522 might be down.
     if (i == 0) {
-      return STATUS_TIMEOUT;
+      Serial.print("E3");
+      return STATUS_ERROR;
     }
     // Stop now if any errors except collisions were detected.
-    byte errorRegValue = PCD_ReadRegister(ErrorReg);	// ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
+    int errorRegValue = PCD_ReadRegister(ErrorReg);	// ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
+    if (errorRegValue == -1) {
+        Serial.print("E4");
+        return STATUS_ERROR;
+    }
     if (errorRegValue & 0x13) {	// BufferOvfl ParityErr ProtocolErr
+        Serial.print("E5");
       return STATUS_ERROR;
     }
 
-    byte _validBits = 0;
+    int _validBits = 0;
 
     // If the caller wants data back, get it from the MFRC522.
     if (backData && backLen) {
-      byte n = PCD_ReadRegister(FIFOLevelReg);	// Number of bytes in the FIFO
+      int n = PCD_ReadRegister(FIFOLevelReg);	// Number of bytes in the FIFO
+      if (n == -1) {
+          Serial.print("E6");
+          return STATUS_ERROR;
+      }
       if (n > *backLen) {
 	return STATUS_NO_ROOM;
       }
       *backLen = n;		// Number of bytes returned
-      PCD_ReadRegister(FIFODataReg, n, backData, rxAlign);	// Get received data from FIFO
+      if (!PCD_ReadRegister(FIFODataReg, n, backData, rxAlign)) {	// Get received data from FIFO
+          Serial.print("E7");
+          return STATUS_ERROR;
+      }
       _validBits = PCD_ReadRegister(ControlReg) & 0x07;	// RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole byte is valid.
+      if (_validBits == -1) {
+          Serial.print("E8");
+          return STATUS_ERROR;
+      }
       if (validBits) {
 	*validBits = _validBits;
       }
@@ -599,6 +645,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       StatusCode status =
 	PCD_CalculateCRC(&backData[0], *backLen - 2, &controlBuffer[0]);
       if (status != STATUS_OK) {
+          Serial.print("E9");
 	return status;
       }
       if ((backData[*backLen - 2] != controlBuffer[0])
@@ -612,7 +659,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 /**
  * Transmits a REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.
- * Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+ * Beware: When two PICCs are in the field at the same time I often get STATUS_NOCARD - probably due do bad antenna design.
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
@@ -625,7 +672,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 /**
  * Transmits a Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision or selection. 7 bit frame.
- * Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+ * Beware: When two PICCs are in the field at the same time I often get STATUS_NOCARD - probably due do bad antenna design.
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
@@ -638,7 +685,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 /**
  * Transmits REQA or WUPA commands.
- * Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+ * Beware: When two PICCs are in the field at the same time I often get STATUS_NOCARD - probably due do bad antenna design.
  *
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
@@ -729,7 +776,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       return STATUS_INVALID;
     }
     // Prepare MFRC522
-    PCD_ClearRegisterBitMask(CollReg, 0x80);	// ValuesAfterColl=1 => Bits received after collision are cleared.
+    Serial.println("CLR bitmask");
+    if (!PCD_ClearRegisterBitMask(CollReg, 0x80)) return STATUS_ERROR;	// ValuesAfterColl=1 => Bits received after collision are cleared.
 
     // Repeat Cascade Level loop until we have a complete UID.
     uidComplete = false;
@@ -801,6 +849,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 	  // Calculate CRC_A
 	  result = PCD_CalculateCRC(buffer, 7, &buffer[7]);
 	  if (result != STATUS_OK) {
+            Serial.println("CRC calc failed");
 	    return result;
 	  }
 	  txLastBits = 0;	// 0 => All 8 bits are valid.
@@ -822,14 +871,20 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 	// Set bit adjustments
 	rxAlign = txLastBits;	// Having a separate variable is overkill. But it makes the next line easier to read.
-	PCD_WriteRegister(BitFramingReg, (rxAlign << 4) + txLastBits);	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
+        Serial.println("Write bit framing");
+        if (!PCD_WriteRegister(BitFramingReg, (rxAlign << 4) + txLastBits)) return STATUS_ERROR;	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
 
 	// Transmit the buffer and receive the response.
+        Serial.println("PCD transceive");
 	result =
 	  PCD_TransceiveData(buffer, bufferUsed, responseBuffer,
 			     &responseLength, &txLastBits, rxAlign);
 	if (result == STATUS_COLLISION) {	// More than one PICC in the field => collision.
-	  byte valueOfCollReg = PCD_ReadRegister(CollReg);	// CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
+          Serial.println("Read colision");
+          int valueOfCollReg = PCD_ReadRegister(CollReg);	// CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
+          if (valueOfCollReg == -1) {
+              return STATUS_ERROR;
+          }
 	  if (valueOfCollReg & 0x20) {	// CollPosNotValid
 	    return STATUS_COLLISION;	// Without a valid collision position we cannot continue
 	  }
@@ -875,6 +930,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       // Verify CRC_A - do our own calculation and store the control in buffer[2..3] - those bytes are not needed anymore.
       result = PCD_CalculateCRC(responseBuffer, 1, &buffer[2]);
       if (result != STATUS_OK) {
+        Serial.println("CRC2 failed");
 	return result;
       }
       if ((buffer[2] != responseBuffer[1])
@@ -917,9 +973,9 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // The standard says:
     //    If the PICC responds with any modulation during a period of 1 ms after the end of the frame containing the
     //    HLTA command, this response shall be interpreted as 'not acknowledge'.
-    // We interpret that this way: Only STATUS_TIMEOUT is a success.
+    // We interpret that this way: Only STATUS_NOCARD is a success.
     result = PCD_TransceiveData(buffer, sizeof(buffer), NULL, 0);
-    if (result == STATUS_TIMEOUT) {
+    if (result == STATUS_NOCARD) {
       return STATUS_OK;
     }
     if (result == STATUS_OK) {	// That is ironically NOT ok in this case ;-)
@@ -949,12 +1005,14 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     switch (code) {
     case STATUS_OK:
       return F("Success.");
+    case STATUS_NOCARD:
+        return F("Timeout when communicating with the card");
     case STATUS_ERROR:
       return F("Error in communication.");
     case STATUS_COLLISION:
       return F("Collission detected.");
     case STATUS_TIMEOUT:
-      return F("Timeout in communication.");
+      return F("Timeout in communication with PCD.");
     case STATUS_NO_ROOM:
       return F("A buffer is not big enough.");
     case STATUS_INTERNAL_ERROR:

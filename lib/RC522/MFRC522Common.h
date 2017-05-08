@@ -168,6 +168,7 @@ enum PICC_Type:byte
 enum StatusCode:byte
 {
   STATUS_OK,			// Success
+  STATUS_NOCARD,                // No card present
   STATUS_ERROR,			// Error in communication
   STATUS_COLLISION,		// Collission detected
   STATUS_TIMEOUT,		// Timeout in communication.

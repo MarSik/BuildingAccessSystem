@@ -15,20 +15,41 @@ public:
   }
 
   void init();
-  void begin()
+  void begin() const
   {
-  };
-  void PCD_WriteRegister(PCD_Register reg, byte value);
-  void PCD_WriteRegister(PCD_Register reg, byte count, byte * values);
-  byte PCD_ReadRegister(PCD_Register reg);
-  void PCD_ReadRegister(PCD_Register reg, byte count, byte * values,
-			byte rxAlign = 0);
-  void end()
+  }
+
+  boolean PCD_WriteRegister(const PCD_Register reg, const byte value) const;
+  boolean PCD_WriteRegister(const PCD_Register reg, const byte count, byte const * const values) const;
+  int PCD_ReadRegister(const PCD_Register reg) const;
+  boolean PCD_ReadRegister(const PCD_Register reg, byte count, byte * const values,
+                        const byte rxAlign = 0) const;
+  void end() const
   {
-  };
+      delay(1);
+  }
+
+  void flush() const {
+      while (_serial.available()) {
+          auto b = _serial.read();
+          Serial.write("Discarding PCD byte: ");
+          Serial.println(b);
+      }
+  }
 
 private:
   HardwareSerial & _serial;
+
+  int waitRead() const {
+      int rx;
+      uint32_t timeout = 1e6;
+
+      do {
+        rx = _serial.read();
+        timeout--;
+      } while(rx == -1 && timeout);
+      return rx;
+  }
 };
 
 class MFRC522IntfSpi
@@ -41,10 +62,10 @@ public:
 
   void init();
   void begin();
-  void PCD_WriteRegister(PCD_Register reg, byte value);
-  void PCD_WriteRegister(PCD_Register reg, byte count, byte * values);
-  byte PCD_ReadRegister(PCD_Register reg);
-  void PCD_ReadRegister(PCD_Register reg, byte count, byte * values,
+  boolean PCD_WriteRegister(PCD_Register reg, byte value);
+  boolean PCD_WriteRegister(PCD_Register reg, byte count, byte * values);
+  int PCD_ReadRegister(PCD_Register reg);
+  boolean PCD_ReadRegister(PCD_Register reg, byte count, byte * values,
 			byte rxAlign = 0);
   void end();
 
