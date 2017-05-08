@@ -570,12 +570,12 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts when the PCD stops transmitting.
     // Each iteration of the do-while-loop takes 17.86μs.
     // TODO check/modify for other architectures than Arduino Uno 16bit
-    uint16_t i;
-    for (i = 2000; i > 0; i--) {
+    uint32_t i = millis() + 36;
+    while (millis() < i) {
       int n = PCD_ReadRegister(ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
       if (n == -1) {
           Serial.print("E1");
-          return STATUS_ERROR;
+          return STATUS_TIMEOUT;
       }
       if (n & waitIRq) {	// One of the interrupts that signal success has been set.
 	break;
@@ -585,15 +585,15 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       }
     }
     // 35.7ms and nothing happend. Communication with the MFRC522 might be down.
-    if (i == 0) {
+    if (millis() > i) {
       Serial.print("E3");
-      return STATUS_ERROR;
+      return STATUS_TIMEOUT;
     }
     // Stop now if any errors except collisions were detected.
     int errorRegValue = PCD_ReadRegister(ErrorReg);	// ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
     if (errorRegValue == -1) {
         Serial.print("E4");
-        return STATUS_ERROR;
+        return STATUS_TIMEOUT;
     }
     if (errorRegValue & 0x13) {	// BufferOvfl ParityErr ProtocolErr
         Serial.print("E5");
@@ -607,7 +607,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       int n = PCD_ReadRegister(FIFOLevelReg);	// Number of bytes in the FIFO
       if (n == -1) {
           Serial.print("E6");
-          return STATUS_ERROR;
+          return STATUS_TIMEOUT;
       }
       if (n > *backLen) {
 	return STATUS_NO_ROOM;
@@ -615,12 +615,12 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       *backLen = n;		// Number of bytes returned
       if (!PCD_ReadRegister(FIFODataReg, n, backData, rxAlign)) {	// Get received data from FIFO
           Serial.print("E7");
-          return STATUS_ERROR;
+          return STATUS_TIMEOUT;
       }
       _validBits = PCD_ReadRegister(ControlReg) & 0x07;	// RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole byte is valid.
       if (_validBits == -1) {
           Serial.print("E8");
-          return STATUS_ERROR;
+          return STATUS_TIMEOUT;
       }
       if (validBits) {
 	*validBits = _validBits;
@@ -901,6 +901,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 	  index = 1 + (currentLevelKnownBits / 8) + (count ? 1 : 0);	// First byte is index 0.
 	  buffer[index] |= (1 << count);
 	} else if (result != STATUS_OK) {
+          Serial.print("PCD transceive failed with ");
+          Serial.println(result, HEX);
 	  return result;
 	} else {		// STATUS_OK
 	  if (currentLevelKnownBits >= 32) {	// This was a SELECT.
@@ -948,6 +950,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // Set correct uid->size
     uid->size = 3 * cascadeLevel + 1;
 
+    Serial.println("Select done!");
     return STATUS_OK;
   }				// End PICC_Select()
 

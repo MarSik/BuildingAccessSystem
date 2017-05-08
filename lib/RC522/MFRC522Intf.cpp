@@ -161,12 +161,12 @@ MFRC522IntfSerial::PCD_WriteRegister(const PCD_Register reg,	///< The register t
   boolean ret = true;
   for (byte index = 0; ret && index < count; index++) {
       begin();
-      _serial.write(reg + index);		// MSB == 0 is for writing. Datasheet section 8.1.3.3.
+      _serial.write(reg);		// MSB == 0 is for writing. Datasheet section 8.1.3.3.
       _serial.write(values[index]);
       //Serial.print("Writing addr: ");
       //Serial.print(reg, HEX);
       auto checkAddress = waitRead();
-      if (checkAddress != (reg + index)) {
+      if (checkAddress != reg) {
           //Serial.print(" ERR got ");
           //Serial.println(checkAddress, HEX);
           ret = false;
@@ -208,7 +208,7 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
   if (count == 0) {
     return true;
   }
-  //Serial.print(F("Reading "));  Serial.print(count); Serial.println(F(" bytes from register."));
+  Serial.print(F("Reading "));  Serial.print(count); Serial.println(F(" bytes from register."));
   const byte address = 0x80 | reg;	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   byte index = 0;		// Index in values array.
   begin();			// Select slave

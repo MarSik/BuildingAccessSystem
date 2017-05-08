@@ -203,7 +203,7 @@ bool ReadCard(uint64_t* uid)
       gb_InitSuccess = false;
       return false;
   }
-  if ( ! result != STATUS_OK) {
+  if (result != STATUS_OK) {
       return false;
   }
 
