@@ -149,8 +149,6 @@ public:
   // Member variables
   Uid uid;			// Used by PICC_ReadCardSerial().
 
-  boolean debug = false;
-
   /////////////////////////////////////////////////////////////////////////////////////
   // Functions for setting up the Arduino
   /////////////////////////////////////////////////////////////////////////////////////
@@ -310,17 +308,17 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       // Set the resetPowerDownPin as digital output, do not reset or power down.
       pinMode(_resetPowerDownPin, OUTPUT);
       digitalWrite(_resetPowerDownPin, LOW); // The MFRC522 chip is in power down mode.
-      Serial.println("HW Reset!");
+      MFRC522Logger.println(DEBUG, "HW Reset!");
       delay(10);
       digitalWrite(_resetPowerDownPin, HIGH);	// Exit power down mode. This triggers a hard reset.
-      Serial.print("Wait for boot after HW Reset!");
+      MFRC522Logger.println(DEBUG, "Wait for boot after HW Reset!");
       delay(50);
       // Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
       hardReset = true;
     }
 
-    Serial.print("HW Reset done ");
-    Serial.println(hardReset);
+    MFRC522Logger.print(DEBUG, "HW Reset done ");
+    MFRC522Logger.println(DEBUG, hardReset);
 
     // Initialize interface
     intf.init();
@@ -329,18 +327,18 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       if (!PCD_Reset()) return false;
     }
 
-    Serial.println("Reset done");
-    Serial.print("PCD version: ");
+    MFRC522Logger.println(INFO, "Reset done");
     delay(100);
 
     //intf.flush();
+    MFRC522Logger.print(DEBUG, "PCD version: ");
     uint8_t ver = PCD_ReadRegister(VersionReg);
     while(ver == 0xff || ver == 0) {
-        Serial.print(".");
+        MFRC522Logger.print(TRACE, ".");
         ver = PCD_ReadRegister(VersionReg);
     }
 
-    Serial.println(ver, HEX);
+    MFRC522Logger.println(DEBUG, ver, HEX);
 
     // Reset baud rates
     if (!PCD_WriteRegister(TxModeReg, 0x00)) return false;
@@ -574,7 +572,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     while (millis() < i) {
       int n = PCD_ReadRegister(ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
       if (n == -1) {
-          Serial.print("E1");
+          MFRC522Logger.print(ERROR, "E1");
           return STATUS_TIMEOUT;
       }
       if (n & waitIRq) {	// One of the interrupts that signal success has been set.
@@ -586,17 +584,17 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     }
     // 35.7ms and nothing happend. Communication with the MFRC522 might be down.
     if (millis() > i) {
-      Serial.print("E3");
+      MFRC522Logger.print(ERROR, "E3");
       return STATUS_TIMEOUT;
     }
     // Stop now if any errors except collisions were detected.
     int errorRegValue = PCD_ReadRegister(ErrorReg);	// ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
     if (errorRegValue == -1) {
-        Serial.print("E4");
+        MFRC522Logger.print(ERROR, "E4");
         return STATUS_TIMEOUT;
     }
     if (errorRegValue & 0x13) {	// BufferOvfl ParityErr ProtocolErr
-        Serial.print("E5");
+        MFRC522Logger.print(ERROR, "E5");
       return STATUS_ERROR;
     }
 
@@ -606,7 +604,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     if (backData && backLen) {
       int n = PCD_ReadRegister(FIFOLevelReg);	// Number of bytes in the FIFO
       if (n == -1) {
-          Serial.print("E6");
+          MFRC522Logger.print(ERROR, "E6");
           return STATUS_TIMEOUT;
       }
       if (n > *backLen) {
@@ -614,12 +612,12 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       }
       *backLen = n;		// Number of bytes returned
       if (!PCD_ReadRegister(FIFODataReg, n, backData, rxAlign)) {	// Get received data from FIFO
-          Serial.print("E7");
+          MFRC522Logger.print(ERROR, "E7");
           return STATUS_TIMEOUT;
       }
       _validBits = PCD_ReadRegister(ControlReg) & 0x07;	// RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole byte is valid.
       if (_validBits == -1) {
-          Serial.print("E8");
+          MFRC522Logger.print(ERROR, "E8");
           return STATUS_TIMEOUT;
       }
       if (validBits) {
@@ -645,7 +643,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       StatusCode status =
 	PCD_CalculateCRC(&backData[0], *backLen - 2, &controlBuffer[0]);
       if (status != STATUS_OK) {
-          Serial.print("E9");
+          MFRC522Logger.print(ERROR, "E9");
 	return status;
       }
       if ((backData[*backLen - 2] != controlBuffer[0])
@@ -776,17 +774,14 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       return STATUS_INVALID;
     }
     // Prepare MFRC522
-    Serial.println("CLR bitmask");
+    MFRC522Logger.println(TRACE, "CLR bitmask");
     if (!PCD_ClearRegisterBitMask(CollReg, 0x80)) return STATUS_ERROR;	// ValuesAfterColl=1 => Bits received after collision are cleared.
 
     // Repeat Cascade Level loop until we have a complete UID.
     uidComplete = false;
     while (!uidComplete) {
-      if (debug) {
-        Serial.print("SELECT cascade ");
-        Serial.print(cascadeLevel);
-        Serial.println("");
-      }
+        MFRC522Logger.print(DEBUG, "SELECT cascade ");
+        MFRC522Logger.println(DEBUG, cascadeLevel);
 
       // Set the Cascade Level in the SEL byte, find out if we need to use the Cascade Tag in byte 2.
       switch (cascadeLevel) {
@@ -842,14 +837,14 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       while (!selectDone) {
 	// Find out how many bits and bytes to send and receive.
 	if (currentLevelKnownBits >= 32) {	// All UID bits in this Cascade Level are known. This is a SELECT.
-	  //Serial.print(F("SELECT: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
+          //MFRC522Logger.print(F("SELECT: currentLevelKnownBits=")); MFRC522Logger.println(currentLevelKnownBits, DEC);
 	  buffer[1] = 0x70;	// NVB - Number of Valid Bits: Seven whole bytes
 	  // Calculate BCC - Block Check Character
 	  buffer[6] = buffer[2] ^ buffer[3] ^ buffer[4] ^ buffer[5];
 	  // Calculate CRC_A
 	  result = PCD_CalculateCRC(buffer, 7, &buffer[7]);
 	  if (result != STATUS_OK) {
-            Serial.println("CRC calc failed");
+            MFRC522Logger.println(ERROR, "CRC calc failed");
 	    return result;
 	  }
 	  txLastBits = 0;	// 0 => All 8 bits are valid.
@@ -858,7 +853,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 	  responseBuffer = &buffer[6];
 	  responseLength = 3;
 	} else {		// This is an ANTICOLLISION.
-	  //Serial.print(F("ANTICOLLISION: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
+          //MFRC522Logger.print(F("ANTICOLLISION: currentLevelKnownBits=")); MFRC522Logger.println(currentLevelKnownBits, DEC);
 	  txLastBits = currentLevelKnownBits % 8;
 	  count = currentLevelKnownBits / 8;	// Number of whole bytes in the UID part.
 	  index = 2 + count;	// Number of whole bytes: SEL + NVB + UIDs
@@ -871,16 +866,16 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 	// Set bit adjustments
 	rxAlign = txLastBits;	// Having a separate variable is overkill. But it makes the next line easier to read.
-        Serial.println("Write bit framing");
+        MFRC522Logger.println(TRACE, "Write bit framing");
         if (!PCD_WriteRegister(BitFramingReg, (rxAlign << 4) + txLastBits)) return STATUS_ERROR;	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
 
 	// Transmit the buffer and receive the response.
-        Serial.println("PCD transceive");
+        MFRC522Logger.println(TRACE, "PCD transceive");
 	result =
 	  PCD_TransceiveData(buffer, bufferUsed, responseBuffer,
 			     &responseLength, &txLastBits, rxAlign);
 	if (result == STATUS_COLLISION) {	// More than one PICC in the field => collision.
-          Serial.println("Read colision");
+          MFRC522Logger.println(DEBUG, "Read colision");
           int valueOfCollReg = PCD_ReadRegister(CollReg);	// CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
           if (valueOfCollReg == -1) {
               return STATUS_ERROR;
@@ -901,8 +896,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 	  index = 1 + (currentLevelKnownBits / 8) + (count ? 1 : 0);	// First byte is index 0.
 	  buffer[index] |= (1 << count);
 	} else if (result != STATUS_OK) {
-          Serial.print("PCD transceive failed with ");
-          Serial.println(result, HEX);
+          MFRC522Logger.print(ERROR, "PCD transceive failed with ");
+          MFRC522Logger.println(ERROR, result, HEX);
 	  return result;
 	} else {		// STATUS_OK
 	  if (currentLevelKnownBits >= 32) {	// This was a SELECT.
@@ -932,7 +927,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       // Verify CRC_A - do our own calculation and store the control in buffer[2..3] - those bytes are not needed anymore.
       result = PCD_CalculateCRC(responseBuffer, 1, &buffer[2]);
       if (result != STATUS_OK) {
-        Serial.println("CRC2 failed");
+        MFRC522Logger.println(ERROR, "CRC2 failed");
 	return result;
       }
       if ((buffer[2] != responseBuffer[1])
@@ -950,7 +945,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // Set correct uid->size
     uid->size = 3 * cascadeLevel + 1;
 
-    Serial.println("Select done!");
+    MFRC522Logger.println(DEBUG, "Select done!");
     return STATUS_OK;
   }				// End PICC_Select()
 
@@ -1108,32 +1103,32 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
  * Dumps debug info about the connected PCD to Serial.
  * Shows all known firmware versions
  */
-  void PCD_DumpVersionToSerial() const
+  void PCD_DumpVersionToSerial(Stream& stream) const
   {
     // Get the MFRC522 firmware version
     byte v = PCD_ReadRegister(VersionReg);
-    Serial.print(F("Firmware Version: 0x"));
-    Serial.print(v, HEX);
+    stream.print(F("Firmware Version: 0x"));
+    stream.print(v, HEX);
     // Lookup which version
     switch (v) {
     case 0x88:
-      Serial.println(F(" = (clone)"));
+      stream.println(F(" = (clone)"));
       break;
     case 0x90:
-      Serial.println(F(" = v0.0"));
+      stream.println(F(" = v0.0"));
       break;
     case 0x91:
-      Serial.println(F(" = v1.0"));
+      stream.println(F(" = v1.0"));
       break;
     case 0x92:
-      Serial.println(F(" = v2.0"));
+      stream.println(F(" = v2.0"));
       break;
     default:
-      Serial.println(F(" = (unknown)"));
+      stream.println(F(" = (unknown)"));
     }
     // When 0x00 or 0xFF is returned, communication probably failed
     if ((v == 0x00) || (v == 0xFF))
-      Serial.println(F
+      stream.println(F
 		     ("WARNING: Communication failure, is the MFRC522 properly connected?"));
   }				// End PCD_DumpVersionToSerial()
 
@@ -1142,30 +1137,30 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
  *
  * @DEPRECATED kept for backward compatibility
  */
-  void PICC_DumpDetailsToSerial(Uid * uid	///< Pointer to Uid struct returned from a successful PICC_Select().
-    ) const
+  void PICC_DumpDetailsToSerial(Uid * uid,	///< Pointer to Uid struct returned from a successful PICC_Select().
+    Stream& stream) const
   {
     // UID
-    Serial.print(F("Card UID:"));
+    stream.print(F("Card UID:"));
     for (byte i = 0; i < uid->size; i++) {
       if (uid->uidByte[i] < 0x10)
-	Serial.print(F(" 0"));
+        stream.print(F(" 0"));
       else
-	Serial.print(F(" "));
-      Serial.print(uid->uidByte[i], HEX);
+        stream.print(F(" "));
+      stream.print(uid->uidByte[i], HEX);
     }
-    Serial.println();
+    stream.println();
 
     // SAK
-    Serial.print(F("Card SAK: "));
+    stream.print(F("Card SAK: "));
     if (uid->sak < 0x10)
-      Serial.print(F("0"));
-    Serial.println(uid->sak, HEX);
+      stream.print(F("0"));
+    stream.println(uid->sak, HEX);
 
     // (suggested) PICC type
     PICC_Type piccType = PICC_GetType(uid->sak);
-    Serial.print(F("PICC type: "));
-    Serial.println(PICC_GetTypeName(piccType));
+    stream.print(F("PICC type: "));
+    stream.println(PICC_GetTypeName(piccType));
   }				// End PICC_DumpDetailsToSerial()
 
 /////////////////////////////////////////////////////////////////////////////////////

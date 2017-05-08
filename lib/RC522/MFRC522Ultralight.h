@@ -93,7 +93,7 @@ public:
       StatusCode result = this->PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
       if (result != STATUS_OK || *(BUFFER(command)) != PICC_CMD_UL_AUTHENTICATE_RESPONSE)
       {
-          if (this->debug) Serial.println("Authentication failed (1)");
+          MFRC522Logger.println(ERROR, "Authentication failed (1)");
           return false;
       }
 
@@ -128,20 +128,18 @@ public:
       mbedtls_des3_set2key_enc(&tdes_ctx, key);
       mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_ENCRYPT, BUFFER_SIZE(i_RndAB), iv, BUFFER(i_RndAB), BUFFER(i_RndAB_enc));
 
-      if (this->debug) {
-          Serial.write("* RndB_enc:  ");
-          println(BUFFER(command) + 1, s32_RandomSize, HEX);
-          Serial.write("* RndB:      ");
-          println(RndB, s32_RandomSize, HEX);
-          Serial.write("* RndB_rot:  ");
-          println(RndB_rot, s32_RandomSize, HEX);
-          Serial.write("* RndA:      ");
-          println(RndA, s32_RandomSize, HEX);
-          Serial.write("* RndAB:     ");
-          println(BUFFER(i_RndAB), BUFFER_LEN(i_RndAB), HEX);
-          Serial.write("* RndAB_enc: ");
-          println(BUFFER(i_RndAB_enc), BUFFER_LEN(i_RndAB_enc), HEX);
-      }
+      MFRC522Logger.write(DEBUG, "* RndB_enc:  ");
+      MFRC522Logger.println(DEBUG, BUFFER(command) + 1, s32_RandomSize, HEX);
+      MFRC522Logger.write(DEBUG, "* RndB:      ");
+      MFRC522Logger.println(DEBUG, RndB, s32_RandomSize, HEX);
+      MFRC522Logger.write(DEBUG, "* RndB_rot:  ");
+      MFRC522Logger.println(DEBUG, RndB_rot, s32_RandomSize, HEX);
+      MFRC522Logger.write(DEBUG, "* RndA:      ");
+      MFRC522Logger.println(DEBUG, RndA, s32_RandomSize, HEX);
+      MFRC522Logger.write(DEBUG, "* RndAB:     ");
+      MFRC522Logger.println(DEBUG, BUFFER(i_RndAB), BUFFER_LEN(i_RndAB), HEX);
+      MFRC522Logger.write(DEBUG, "* RndAB_enc: ");
+      MFRC522Logger.println(DEBUG, BUFFER(i_RndAB_enc), BUFFER_LEN(i_RndAB_enc), HEX);
 
       responseSize = BUFFER_SIZE(command);
       BUFFER_CLEAR(command);
@@ -151,7 +149,7 @@ public:
       result = this->PCD_Mifare_TransceiveWithReply(BUFFER(command), BUFFER_SIZE(command), BUFFER_LEN(command), BUFFER(command), &responseSize);
       if (result != STATUS_OK || *BUFFER(command) != 0x00)
       {
-        if (this->debug) Serial.println("Authentication failed (2)");
+        MFRC522Logger.println(ERROR, "Authentication failed (2)");
           return false;
       }
 
@@ -160,22 +158,20 @@ public:
       mbedtls_des3_set2key_dec(&tdes_ctx, key);
       mbedtls_des3_crypt_cbc(&tdes_ctx, MBEDTLS_DES_DECRYPT, s32_RandomSize, iv, BUFFER(command) + 1, RndA_dec);
 
-      if (this->debug) {
-        Serial.write("* RndA_enc recv:     ");
-        println(BUFFER(command) + 1, s32_RandomSize, HEX);
-        Serial.write("* RndA_recv:     ");
-        println(RndA_dec, s32_RandomSize, HEX);
-      }
+      MFRC522Logger.write(DEBUG, "* RndA_enc recv:     ");
+      MFRC522Logger.println(DEBUG, BUFFER(command) + 1, s32_RandomSize, HEX);
+      MFRC522Logger.write(DEBUG, "* RndA_recv:     ");
+      MFRC522Logger.println(DEBUG, RndA_dec, s32_RandomSize, HEX);
 
       // compare rotate_left(RndA) with RndA_enc
       if (*(RndA_dec + s32_RandomSize - 1) != RndA[0]) {
-         if (this->debug) Serial.println("Authentication failed (3)");
+         MFRC522Logger.println(ERROR, "Authentication failed (3)");
          return false;
       }
 
       for (byte idx = 0; idx < s32_RandomSize - 1; idx++) {
         if (*(RndA_dec + idx) != RndA[1 + idx]) {
-          if (this->debug) Serial.println("Authentication failed (4)");
+          MFRC522Logger.println(ERROR, "Authentication failed (4)");
           return false;
         }
       }

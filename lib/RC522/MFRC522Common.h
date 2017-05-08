@@ -1,5 +1,20 @@
 #ifndef MFRC522_COMMON_H
 #define MFRC522_COMMON_H
+
+#include "logging.h"
+
+#ifndef MFRC522_LOG_LEVEL
+#define MFRC522_LOG_LEVEL NONE
+#endif
+
+// MFRC logger
+extern const Logger MFRC522Logger;
+constexpr auto DEBUG = Logger::Level::DEBUG;
+constexpr auto INFO = Logger::Level::INFO;
+constexpr auto TRACE = Logger::Level::TRACE;
+constexpr auto ERROR = Logger::Level::ERROR;
+constexpr auto NONE = Logger::Level::NONE;
+
   // MFRC522 RxGain[2:0] masks, defines the receiver's signal voltage gain factor (on the PCD).
   // Described in 9.3.3.6 / table 98 of the datasheet at http://www.nxp.com/documents/data_sheet/MFRC522.pdf
 enum PCD_RxGain:byte

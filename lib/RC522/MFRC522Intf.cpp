@@ -86,7 +86,7 @@ MFRC522IntfSpi::PCD_ReadRegister(PCD_Register reg,	///< The register to read fro
   if (count == 0) {
     return true;
   }
-  //Serial.print(F("Reading "));  Serial.print(count); Serial.println(F(" bytes from register."));
+  //MFRC522Logger.print(F("Reading "));  MFRC522Logger.print(count); MFRC522Logger.println(F(" bytes from register."));
   byte address = 0x80 | (reg << 1);	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   byte index = 0;		// Index in values array.
   begin();			// Select slave
@@ -131,17 +131,17 @@ MFRC522IntfSerial::PCD_WriteRegister(const PCD_Register reg,	///< The register t
   _serial.write(reg);		// MSB == 0 is for writing. Datasheet section 8.1.3.3.
   _serial.write(value);
   _serial.flush();
-  //Serial.print("Writing addr: ");
-  //Serial.print(reg, HEX);
+  //MFRC522Logger.print("Writing addr: ");
+  //MFRC522Logger.print(reg, HEX);
   auto checkAddress = waitRead();
   boolean ret;
   if (checkAddress != reg) {
-      //Serial.print(" ERR got ");
-      //Serial.println(checkAddress, HEX);
+      //MFRC522Logger.print(" ERR got ");
+      //MFRC522Logger.println(checkAddress, HEX);
       ret = false;
   } else {
-      //Serial.print(" OK got ");
-      //Serial.println(checkAddress, HEX);
+      //MFRC522Logger.print(" OK got ");
+      //MFRC522Logger.println(checkAddress, HEX);
       ret = true;
   }
   end();
@@ -163,16 +163,16 @@ MFRC522IntfSerial::PCD_WriteRegister(const PCD_Register reg,	///< The register t
       begin();
       _serial.write(reg);		// MSB == 0 is for writing. Datasheet section 8.1.3.3.
       _serial.write(values[index]);
-      //Serial.print("Writing addr: ");
-      //Serial.print(reg, HEX);
+      //MFRC522Logger.print("Writing addr: ");
+      //MFRC522Logger.print(reg, HEX);
       auto checkAddress = waitRead();
       if (checkAddress != reg) {
-          //Serial.print(" ERR got ");
-          //Serial.println(checkAddress, HEX);
+          //MFRC522Logger.print(" ERR got ");
+          //MFRC522Logger.println(checkAddress, HEX);
           ret = false;
       } else {
-          //Serial.print(" OK got ");
-          //Serial.println(checkAddress, HEX);
+          //MFRC522Logger.print(" OK got ");
+          //MFRC522Logger.println(checkAddress, HEX);
       }
       end();
   }
@@ -208,7 +208,7 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
   if (count == 0) {
     return true;
   }
-  Serial.print(F("Reading "));  Serial.print(count); Serial.println(F(" bytes from register."));
+  MFRC522Logger.print(TRACE, F("Reading "));  MFRC522Logger.print(TRACE, count); MFRC522Logger.println(TRACE, F(" bytes from register."));
   const byte address = 0x80 | reg;	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   byte index = 0;		// Index in values array.
   begin();			// Select slave
@@ -220,7 +220,7 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
     // Read value and tell that we want to read the same address again.
     const int value = waitRead();
     if (value == -1) {
-        Serial.print("F1");
+        MFRC522Logger.print(ERROR, "F1");
         return false;
     }
     _serial.write(address);	// we want to read the same address again.
@@ -231,7 +231,7 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
   while (index < count) {
     const int value = waitRead();
     if (value == -1) {
-        Serial.print("F2");
+        MFRC522Logger.print(ERROR, "F2");
         return false;
     }
     values[index] = value;	// Read the byte
@@ -240,7 +240,7 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
   }
   const int value = waitRead();
   if (value == -1) {
-      Serial.print("F3");
+      MFRC522Logger.print(ERROR, "F3");
       return false;
   }
   values[index] = value;	// Read the final byte

@@ -1,13 +1,5 @@
 #include "utils.h"
 
-void println(const byte* data, uint8_t len, uint8_t format) {
-  for (uint8_t idx = 0; idx < len; idx++) {
-    Serial.print(*(data + idx), format);
-    Serial.write(' ');
-  }
-  Serial.println("");
-}
-
 byte* BUFFER(byte* buff) {
   return buff+2;
 }

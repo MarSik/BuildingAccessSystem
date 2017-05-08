@@ -192,14 +192,13 @@ bool ReadCard(uint64_t* uid)
       return false;
   }
 
-  Serial.println("Card detected...");
-  mfrc522.debug = true;
+  RootLogger.println(INFO, "Card detected...");
 
   // Select one of the cards
   StatusCode result = mfrc522.PICC_Select(&mfrc522.uid);
   if (result == STATUS_INTERNAL_ERROR || result == STATUS_ERROR || result == STATUS_TIMEOUT) {
-      Serial.print("Select failed: ");
-      Serial.println(result, HEX);
+      RootLogger.print(DEBUG, "Select failed: ");
+      RootLogger.println(DEBUG, result, HEX);
       gb_InitSuccess = false;
       return false;
   }
@@ -216,7 +215,7 @@ bool ReadCard(uint64_t* uid)
   Utils::PrintHex32(*uid, LF);
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
-  mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
+  mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid), Serial);
   return true;
 }
 
@@ -302,7 +301,7 @@ void InitReader(bool b_ShowError)
         Serial.println("Initializing reader...");
         if (!mfrc522.PCD_Init()) return;		// Init MFRC522
         Serial.println("Getting reader info..");
-        mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
+        mfrc522.PCD_DumpVersionToSerial(Serial);	// Show details of PCD - MFRC522 Card Reader details
         Serial.println("Setting gain to maximum");
         mfrc522.PCD_SetAntennaGain(PCD_RxGain::RxGain_avg);
         if (!mfrc522.PCD_WriteRegister(PCD_Register::RxThresholdReg, 0x22)) return;
@@ -479,11 +478,14 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-        if (s8_Parameter[0] == '2' || s8_Parameter[0] == '3') {
-            mfrc522.debug = true;
+        if (s8_Parameter[0] == '2') {
+            RootLogger.setLevel(DEBUG);
+        } else if (s8_Parameter[0] == '3') {
+            RootLogger.setLevel(TRACE);
         } else {
-            mfrc522.debug = false;
+            RootLogger.setLevel(INFO);
         }
+
 
         return;
     }

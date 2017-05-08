@@ -494,21 +494,17 @@ public:
               }
 
               // Transmit the buffer and receive the response, validate CRC_A.
-              if (this->debug) {
-                Serial.print("Sent: ");
-                println(buffer, usedSize + 2, HEX);
-              }
+              MFRC522Logger.print(TRACE, "Sent: ");
+              MFRC522Logger.println(TRACE, buffer, usedSize + 2, HEX);
 
               result = this->PCD_TransceiveData(buffer, usedSize + 2, readBuffer, readSize, NULL, 0, true);
 
-              if (this->debug) {
-                Serial.print("Received status: ");
-                Serial.print(result);
-                Serial.print(" resp. size: ");
-                Serial.print(*readSize);
-                Serial.print(" resp. code: ");
-                println(readBuffer, *readSize, HEX);
-              }
+              MFRC522Logger.print(TRACE, "Received status: ");
+              MFRC522Logger.print(TRACE, result);
+              MFRC522Logger.print(TRACE, " resp. size: ");
+              MFRC522Logger.print(TRACE, *readSize);
+              MFRC522Logger.print(TRACE, " resp. code: ");
+              MFRC522Logger.println(TRACE, readBuffer, *readSize, HEX);
 
               if (result != STATUS_OK) {
                 return result;
@@ -540,21 +536,17 @@ public:
               }
 
               // Transmit the buffer and receive the response, validate CRC_A.
-              if (this->debug) {
-                Serial.print("Sent: ");
-                println(buffer, usedSize + 2, HEX);
-              }
+              MFRC522Logger.print(DEBUG, "Sent: ");
+              MFRC522Logger.println(DEBUG, buffer, usedSize + 2, HEX);
 
               result = this->PCD_TransceiveData(buffer, usedSize + 2, readBuffer, readSize, NULL, 0, true);
 
-              if (this->debug) {
-                Serial.print("Received status: ");
-                Serial.print(result);
-                Serial.print(" resp. size: ");
-                Serial.print(*readSize);
-                Serial.print(" resp. code: ");
-                println(readBuffer, *readSize, HEX);
-              }
+              MFRC522Logger.print(DEBUG, "Received status: ");
+              MFRC522Logger.print(DEBUG, result);
+              MFRC522Logger.print(DEBUG, " resp. size: ");
+              MFRC522Logger.print(DEBUG, *readSize);
+              MFRC522Logger.print(DEBUG, " resp. code: ");
+              MFRC522Logger.println(DEBUG, readBuffer, *readSize, HEX);
 
               if (result != STATUS_OK) {
                 return result;
