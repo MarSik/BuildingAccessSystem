@@ -1,0 +1,9 @@
+(fp_lib_table
+  (lib (name boxes)(type KiCad)(uri "$(KISYSMOD)/boxes.pretty")(options "")(descr ""))
+  (lib (name Mounting_Holes)(type KiCad)(uri "$(KISYSMOD)/Mounting_Holes.pretty")(options "")(descr ""))
+  (lib (name smd-handsolder)(type KiCad)(uri "$(KISYSMOD)/smd-handsolder.pretty")(options "")(descr ""))
+  (lib (name smd-normal)(type KiCad)(uri "$(KISYSMOD)/smd-normal.pretty")(options "")(descr ""))
+  (lib (name symbols)(type KiCad)(uri "$(KISYSMOD)/symbols.pretty")(options "")(descr ""))
+  (lib (name th-normal)(type KiCad)(uri "$(KISYSMOD)/th-normal.pretty")(options "")(descr ""))
+  (lib (name th-npth)(type KiCad)(uri "$(KISYSMOD)/th-npth.pretty")(options "")(descr ""))
+)
