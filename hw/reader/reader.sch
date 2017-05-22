@@ -907,7 +907,6 @@ Wire Wire Line
 	6850 3250 7350 3250
 Text Label 6900 3250 0    60   ~ 0
 ~RE_RESET
-NoConn ~ 6850 3350
 Text Label 10100 3750 2    60   ~ 0
 ~RE_RESET
 $Comp
@@ -1099,7 +1098,6 @@ F 3 "" H 2300 7150 60  0000 C CNN
 	1    2300 7150
 	1    0    0    -1  
 $EndComp
-NoConn ~ 9600 3950
 $Comp
 L PWR_FLAG #FLG037
 U 1 1 591EE76F
@@ -1150,4 +1148,8 @@ Text Label 2200 6400 0    60   ~ 0
 485A
 Text Label 2200 6700 0    60   ~ 0
 485B
+Wire Wire Line
+	6850 3350 7350 3350
+Text Label 6900 3350 0    60   ~ 0
+IRQ
 $EndSCHEMATC

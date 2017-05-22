@@ -88,7 +88,7 @@ F 3 "" H 1100 2250 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 Text Notes 1050 2700 0    60   ~ 0
-Main power input - 12V\npolarity and overvoltage protected
+Main power input - cca 13.8V\npolarity and overvoltage protected
 $Comp
 L Jamicon_220uF_16V_TKP C402
 U 1 1 590E22CB
@@ -143,6 +143,43 @@ F 3 "" H 5650 2800 60  0000 C CNN
 	1    5650 2800
 	1    0    0    -1  
 $EndComp
+Text Label 1450 2200 2    60   ~ 0
+PIN
+Text Label 2050 2050 0    60   ~ 0
+PFUSED
+$Comp
+L Mini-360 U402
+U 1 1 5922A582
+P 5000 2800
+F 0 "U402" H 5000 3287 60  0000 C CNN
+F 1 "Mini-360" H 5000 3181 60  0000 C CNN
+F 2 "th-normal:DcDc_MH_MINI_360" H 5000 2800 60  0001 C CNN
+F 3 "" H 5000 2800 60  0000 C CNN
+	1    5000 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jamicon_220uF_25V C?
+U 1 1 5922BD9A
+P 3250 2300
+F 0 "C?" H 3365 2346 50  0000 L CNN
+F 1 "Jamicon_220uF_25V" H 3365 2255 50  0000 L CNN
+F 2 "" H 3250 2300 60  0000 C CNN
+F 3 "" H 3250 2300 60  0000 C CNN
+	1    3250 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 5922BEB6
+P 3600 2750
+F 0 "C?" H 3715 2796 50  0000 L CNN
+F 1 "C" H 3715 2705 50  0000 L CNN
+F 2 "" H 3638 2600 30  0000 C CNN
+F 3 "" H 3600 2750 60  0000 C CNN
+	1    3600 2750
+	1    0    0    -1  
+$EndComp
 Wire Wire Line
 	5400 1400 6300 1400
 Wire Wire Line
@@ -183,8 +220,6 @@ Wire Wire Line
 	4200 1400 4200 2600
 Wire Wire Line
 	4200 1400 4600 1400
-Wire Wire Line
-	4200 2600 7000 2600
 Connection ~ 4200 2050
 Wire Wire Line
 	4450 1800 4450 3450
@@ -218,8 +253,30 @@ Wire Wire Line
 	5650 2650 5650 2600
 Connection ~ 5650 2600
 Connection ~ 6300 2600
-Text Label 1450 2200 2    60   ~ 0
-PIN
-Text Label 2050 2050 0    60   ~ 0
-PFUSED
+Wire Wire Line
+	4200 2600 4600 2600
+Wire Wire Line
+	5400 2600 7000 2600
+Wire Wire Line
+	4600 3000 4500 3000
+Wire Wire Line
+	4500 3000 4500 3450
+Connection ~ 4500 3450
+Wire Wire Line
+	5400 3000 5500 3000
+Wire Wire Line
+	5500 3000 5500 3450
+Connection ~ 5500 3450
+Wire Wire Line
+	3250 2150 3250 2050
+Connection ~ 3250 2050
+Wire Wire Line
+	3250 2450 3250 3450
+Connection ~ 3250 3450
+Wire Wire Line
+	3600 2600 3600 2050
+Connection ~ 3600 2050
+Wire Wire Line
+	3600 2900 3600 3450
+Connection ~ 3600 3450
 $EndSCHEMATC
