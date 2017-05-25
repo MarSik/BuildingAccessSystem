@@ -111,11 +111,11 @@ F 3 "" H 6300 2800 60  0000 C CNN
 	1    6300 2800
 	1    0    0    -1  
 $EndComp
-Text HLabel 7000 1200 2    60   UnSpc ~ 0
+Text HLabel 10250 1200 2    60   UnSpc ~ 0
 +5V
 Text HLabel 7000 2600 2    60   UnSpc ~ 0
 +12V
-Text HLabel 7000 3450 2    60   UnSpc ~ 0
+Text HLabel 10250 3450 2    60   UnSpc ~ 0
 GND
 Text Notes 4950 1650 0    60   ~ 0
 5V
@@ -222,7 +222,7 @@ Wire Wire Line
 	4200 1400 4600 1400
 Connection ~ 4200 2050
 Wire Wire Line
-	4450 1800 4450 3450
+	4450 3450 4450 1800
 Wire Wire Line
 	4450 1800 4600 1800
 Wire Wire Line
@@ -232,9 +232,9 @@ Wire Wire Line
 Wire Wire Line
 	6300 3450 6300 2950
 Wire Wire Line
-	7000 1200 5650 1200
+	10250 1200 5650 1200
 Wire Wire Line
-	3050 3450 7000 3450
+	3050 3450 10250 3450
 Connection ~ 5650 3450
 Wire Wire Line
 	5650 2100 6750 2100
@@ -279,4 +279,109 @@ Connection ~ 3600 2050
 Wire Wire Line
 	3600 2900 3600 3450
 Connection ~ 3600 3450
+$Comp
+L TL431ACD U?
+U 1 1 5925D1B0
+P 8700 2250
+F 0 "U?" H 9088 2303 60  0000 L CNN
+F 1 "TL431ACD" H 9088 2197 60  0000 L CNN
+F 2 "" H 9550 2100 60  0001 C CNN
+F 3 "" H 9550 2100 60  0001 C CNN
+	1    8700 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R?
+U 1 1 5925D21E
+P 8000 1950
+F 0 "R?" H 8070 1996 50  0000 L CNN
+F 1 "12k" H 8070 1905 50  0000 L CNN
+F 2 "" V 7930 1950 30  0000 C CNN
+F 3 "" H 8000 1950 30  0000 C CNN
+	1    8000 1950
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R?
+U 1 1 5925D25E
+P 8000 2350
+F 0 "R?" H 8070 2396 50  0000 L CNN
+F 1 "10k" H 8070 2305 50  0000 L CNN
+F 2 "" V 7930 2350 30  0000 C CNN
+F 3 "" H 8000 2350 30  0000 C CNN
+	1    8000 2350
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R?
+U 1 1 5925D32B
+P 8900 1600
+F 0 "R?" H 8970 1646 50  0000 L CNN
+F 1 "R" H 8970 1555 50  0000 L CNN
+F 2 "" V 8830 1600 30  0000 C CNN
+F 3 "" H 8900 1600 30  0000 C CNN
+	1    8900 1600
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8300 2150 8000 2150
+Wire Wire Line
+	8000 2100 8000 2200
+Connection ~ 8000 2150
+Wire Wire Line
+	8000 2500 8000 2800
+Wire Wire Line
+	8000 2800 9350 2800
+Wire Wire Line
+	9000 2800 9000 2650
+Wire Wire Line
+	8550 2800 8550 3450
+Connection ~ 8550 3450
+Connection ~ 8550 2800
+Wire Wire Line
+	8700 2650 8700 2800
+Connection ~ 8700 2800
+Wire Wire Line
+	8800 2650 8800 2800
+Connection ~ 8800 2800
+Wire Wire Line
+	8900 2650 8900 2800
+Connection ~ 8900 2800
+Wire Wire Line
+	8000 1800 8000 1350
+Wire Wire Line
+	8000 1350 9850 1350
+Wire Wire Line
+	8900 1450 8900 1350
+Connection ~ 8900 1350
+Wire Wire Line
+	8900 1750 8900 1850
+Wire Wire Line
+	8900 1800 9550 1800
+Connection ~ 8900 1800
+Wire Wire Line
+	8550 1350 8550 1200
+Connection ~ 8550 1200
+Connection ~ 8550 1350
+Text Notes 7900 1100 0    60   ~ 0
+Overvoltage crowbar protection
+$Comp
+L C C?
+U 1 1 5925DDF5
+P 9350 2600
+F 0 "C?" H 9465 2646 50  0000 L CNN
+F 1 "C" H 9465 2555 50  0000 L CNN
+F 2 "" H 9388 2450 30  0000 C CNN
+F 3 "" H 9350 2600 60  0000 C CNN
+	1    9350 2600
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9350 2450 9350 1800
+Connection ~ 9350 1800
+Wire Wire Line
+	9350 2800 9350 2750
+Connection ~ 9000 2800
+Text Notes 9900 2350 0    60   ~ 0
+Triak, MT1 nahoře\nnapř. Z0103MA 5AL2
 $EndSCHEMATC

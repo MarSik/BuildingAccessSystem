@@ -1152,4 +1152,35 @@ Wire Wire Line
 	6850 3350 7350 3350
 Text Label 6900 3350 0    60   ~ 0
 IRQ
+$Comp
+L +3.3V #PWR041
+U 1 1 59272043
+P 7000 5000
+F 0 "#PWR041" H 7000 4850 50  0001 C CNN
+F 1 "+3.3V" V 7015 5128 50  0000 L CNN
+F 2 "" H 7000 5000 60  0000 C CNN
+F 3 "" H 7000 5000 60  0000 C CNN
+	1    7000 5000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R R112
+U 1 1 5927213E
+P 7200 5000
+F 0 "R112" V 7300 5000 50  0000 C CNN
+F 1 "R" V 7200 5000 50  0000 C CNN
+F 2 "smd-handsolder:R_1206_HandSoldering" V 7130 5000 30  0001 C CNN
+F 3 "" H 7200 5000 30  0000 C CNN
+	1    7200 5000
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	7350 5000 7400 5000
+Wire Wire Line
+	7400 5000 7400 4650
+Connection ~ 7400 4650
+Wire Wire Line
+	7000 5000 7050 5000
+Text Notes 5200 6100 0    60   ~ 0
+PTA3 is open drain output, external pull-up might be\nnecessary see Figure 11-2 in the Kinetis KEO4Z\nuser manual.\n\nBut the input of SN75176 is pulled up internally so\nin this case the resistor is probably not needed. \nSee Figure 19 of TI's sn75176b.pdf\n\nI am keeping the R here just in case it is needed\nfor reliable operation.
 $EndSCHEMATC

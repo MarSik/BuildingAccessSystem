@@ -37,8 +37,7 @@
 #     - pip install -U platformio
 #
 # script:
-#     - pushd controller && platformio run && popd
-#     - pushd reader && platformio run && popd
+#     - platformio run
 
 
 #

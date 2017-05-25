@@ -1,11 +1,11 @@
-(kicad_pcb (version 20170123) (host pcbnew "(2017-05-12 revision b823d0b)-master")
+(kicad_pcb (version 20170123) (host pcbnew "(2017-05-18 revision 2a3a699)-master")
 
   (general
     (links 201)
-    (no_connects 3)
+    (no_connects 0)
     (area 46.361476 47.2485 154.688524 175.589001)
     (thickness 1.6)
-    (drawings 20)
+    (drawings 21)
     (tracks 789)
     (zones 0)
     (modules 90)
@@ -37,7 +37,7 @@
   )
 
   (setup
-    (last_trace_width 1.27)
+    (last_trace_width 0.508)
     (user_trace_width 0.508)
     (user_trace_width 1.016)
     (user_trace_width 1.27)
@@ -90,7 +90,7 @@
       (mirror false)
       (drillshape 0)
       (scaleselection 1)
-      (outputdirectory dirtypcb/))
+      (outputdirectory seedstudio/))
   )
 
   (net 0 "")
@@ -3575,6 +3575,9 @@
     )
   )
 
+  (gr_text "CHARGE\n+BATT\nCURRENT1\nCURRENT2\nVCC\nGND" (at 94.615 118.745) (layer F.SilkS)
+    (effects (font (size 1 1) (thickness 0.15)) (justify left))
+  )
   (gr_text "GND\n~12V" (at 50.8 80.645) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.3)) (justify left))
   )
