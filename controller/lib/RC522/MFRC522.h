@@ -333,7 +333,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     //intf.flush();
     MFRC522Logger.print(DEBUG, "PCD version: ");
     uint8_t ver = PCD_ReadRegister(VersionReg);
-    while(ver == 0xff || ver == 0) {
+    unsigned long timeout = millis() + 250;
+    while(millis() < timeout && (ver == 0xff || ver == 0)) {
         MFRC522Logger.print(TRACE, ".");
         ver = PCD_ReadRegister(VersionReg);
     }
@@ -373,7 +374,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     delay(50);
     // Wait for the PowerDown bit in CommandReg to be cleared
     int status = PCD_ReadRegister(CommandReg);
-    while ((status != -1) && (status & (1 << 4))) {
+    unsigned long timeout = millis() + 50;
+    while ((status != -1) && (status & (1 << 4)) && timeout < millis()) {
       // PCD still restarting - unlikely after waiting 50ms, but better safe than sorry.
     }
     return status != -1;

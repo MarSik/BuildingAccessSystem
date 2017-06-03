@@ -214,6 +214,7 @@ public:
     static void     PrintHex8 (byte     u8_Data,  const char* s8_LF=NULL);
     static void     PrintHex16(uint16_t u16_Data, const char* s8_LF=NULL);
     static void     PrintHex32(uint32_t u32_Data, const char* s8_LF=NULL);
+    static void     PrintHex64(uint64_t ull_Data, const char* s8_LF=NULL);
     static void     PrintHexBuf(const byte* u8_Data, const uint32_t u32_DataLen, const char* s8_LF=NULL, int s32_Brace1=-1, int S32_Brace2=-1);
     static void     PrintInterval(uint64_t u64_Time, const char* s8_LF=NULL);
     static void     GenerateRandom(byte* u8_Random, int s32_Length);

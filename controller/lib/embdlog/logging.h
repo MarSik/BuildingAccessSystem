@@ -6,7 +6,7 @@
 class Logger
 {
 public:
-    Logger(Stream& stream) : stream(stream), level(INFO) {}
+    Logger(Stream& stream) : stream(stream), level(ERROR) {}
 
     enum Level {
         TRACE = 0,
@@ -73,7 +73,7 @@ public:
         this->level = level;
     }
 
-    Logger& logger(Level level) const {
+    Logger logger(Level level) const {
         Logger logger = Logger(this->stream);
         logger.setLevel(level);
         return logger;

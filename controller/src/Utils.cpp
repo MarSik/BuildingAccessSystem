@@ -38,6 +38,12 @@ void Utils::PrintHex32(uint32_t u32_Data, const char* s8_LF) // =NULL
     sprintf(s8_Buf, "%08X", (unsigned int)u32_Data);
     Print(s8_Buf, s8_LF);
 }
+void Utils::PrintHex64(uint64_t ull_Data, const char* s8_LF) // =NULL
+{
+    char s8_Buf[20];
+    sprintf(s8_Buf, "%016llX", ull_Data);
+    Print(s8_Buf, s8_LF);
+}
 
 // Prints a hexadecimal buffer as 2 digit HEX numbers
 // At the byte position s32_Brace1 a "<" will be inserted

@@ -74,6 +74,9 @@
 #define LED_BUILTIN 40
 #endif // LED_BUILTIN
 
+// DCF77 receiver
+#define DCF77_PIN 11
+
 // ######################################################################################
 
 #include <Arduino.h>
@@ -81,11 +84,15 @@
 #include <algorithm>
 #include "SPI.h"
 #include "EEPROM.h"
+#include "DCF77.h"
+#include "Time.h"
 #include "MFRC522Ultralight.h"
 #include "MFRC522Intf.h"
 #include "Utils.h"
 #include "Secrets.h"
 #include "cardmanager.h"
+
+DCF77 DCF = DCF77(DCF77_PIN, DCF77_PIN);
 
 MFRC522IntfSerial mfrcIntf(Serial1);
 MFRC522Ultralight<MFRC522IntfSerial> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
@@ -441,6 +448,29 @@ void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
     gu64_LastID = *cardId;
 }
 
+void printDigits(int digits){
+  // utility function for digital clock display: prints preceding colon and leading 0
+  Serial.print(":");
+  if(digits < 10)
+    Serial.print('0');
+  Serial.print(digits);
+}
+
+void digitalClockDisplay() {
+  // digital clock display of the time
+  Serial.print(hour());
+  printDigits(minute());
+  printDigits(second());
+  Serial.print(" ");
+  Serial.print(day());
+  Serial.print(" ");
+  Serial.print(month());
+  Serial.print(" ");
+  Serial.print(year());
+  Serial.println();
+}
+
+
 void OnCommandReceived(bool b_PasswordValid)
 {
     char* s8_Parameter;
@@ -609,6 +639,7 @@ void OnCommandReceived(bool b_PasswordValid)
 
     Utils::Print("System is running since ");
     Utils::PrintInterval(Utils::GetMillis64(), LF);
+    digitalClockDisplay();
 }
 
 // Checks if the user has typed anything in the Terminal program and stores it in gs8_CommandBuffer
@@ -681,6 +712,8 @@ void setup()
     Utils::SetPinMode(LED_RED_PIN,   OUTPUT);
     Utils::SetPinMode(LED_BUILTIN,   OUTPUT);
 
+    DCF.Start();
+
     // A longer pause is required to assure that the condensator at VOLTAGE_MEASURE_PIN
     // has been charged before the battery voltage is measured for the first time.
     FlashLED(LED_GREEN, 1000);
@@ -704,6 +737,16 @@ void loop()
     bool b_VoltageOK = CheckBattery();
 
     uint64_t u64_StartTick = Utils::GetMillis64();
+
+    time_t DCFtime = DCF.getTime(); // Check if new DCF77 time is available
+    if (DCFtime != 0)
+    {
+        setTime(DCFtime);
+    }
+
+    Serial.print("DCF buff ");
+    Serial.println(DCF.bufferPosition);
+    //Utils::PrintHex64(DCF.runningBuffer, LF);
 
     static uint64_t u64_LastRead = 0;
     if (gb_InitSuccess)
@@ -747,7 +790,6 @@ void loop()
 
             // TODO check blacklist
             // TODO decode permissions
-
             Utils::Print("> ");
         } else {
             gu64_LastID = 0;

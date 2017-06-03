@@ -42,12 +42,11 @@ private:
 
   int waitRead() const {
       int rx;
-      uint32_t timeout = 1e6;
+      uint32_t timeout = millis() + 100;
 
       do {
         rx = _serial.read();
-        timeout--;
-      } while(rx == -1 && timeout);
+      } while(rx == -1 && timeout > millis());
       return rx;
   }
 };

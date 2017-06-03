@@ -4,11 +4,11 @@
 #include "logging.h"
 
 #ifndef MFRC522_LOG_LEVEL
-#define MFRC522_LOG_LEVEL NONE
+#define MFRC522_LOG_LEVEL DEBUG
 #endif
 
 // MFRC logger
-extern const Logger MFRC522Logger;
+extern Logger MFRC522Logger;
 constexpr auto DEBUG = Logger::Level::DEBUG;
 constexpr auto INFO = Logger::Level::INFO;
 constexpr auto TRACE = Logger::Level::TRACE;
