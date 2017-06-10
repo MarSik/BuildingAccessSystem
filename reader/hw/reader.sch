@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:reader-rescue
 LIBS:capacitors
 LIBS:connectors
 LIBS:cpu
@@ -27,7 +28,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L MKE04P24M48SF0 U103
+L MKE04P24M48SF0-RESCUE-reader U103
 U 1 1 591A19D8
 P 5850 3950
 F 0 "U103" H 5850 4937 60  0000 C CNN

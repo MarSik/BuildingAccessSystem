@@ -16,14 +16,12 @@
 #define PASSWORD_TIMEOUT  5
 
 // This Arduino / Teensy pin is connected to the relay that opens the door 1
-#define DOOR_1_PIN       9
-
-// This Arduino / Teensy pin is connected to the optional relay that opens the door 2
-#define DOOR_2_PIN       10
+#define DOOR_PIN       9
 
 // This Arduino / Teensy pin is connected to the transistor that charges the battery
 #define CHARGE_PIN       19
 
+#define BT_RESET 37
 
 // The software SPI SCK  pin (Clock)
 #define SPI_MODULE        3
@@ -32,7 +30,8 @@
 
 // This Arduino / Teensy pin is connected to the reader RSTPDN pin (reset the reader)
 // When a communication error with the reader is detected the board is reset automatically.
-#define RESET_PIN         2
+#define RESET_PIN         5
+
 
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
 // The green LED flashes fast while no card is present and flashes 1 second when opening the door.
@@ -711,6 +710,9 @@ void setup()
     Utils::SetPinMode(LED_GREEN_PIN, OUTPUT);
     Utils::SetPinMode(LED_RED_PIN,   OUTPUT);
     Utils::SetPinMode(LED_BUILTIN,   OUTPUT);
+
+    Utils::SetPinMode(BT_RESET, OUTPUT);
+    Utils::WritePin(BT_RESET, LOW);
 
     DCF.Start();
 

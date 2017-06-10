@@ -1,4 +1,4 @@
-update=Čt 18. květen 2017, 23:24:09 CEST
+update=So 10. červen 2017, 12:40:17 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -29,15 +29,16 @@ version=1
 version=1
 LibDir=/home/msivak/Developer/KiCad/components
 [eeschema/libraries]
-LibName1=capacitors
-LibName2=connectors
-LibName3=cpu
-LibName4=discrete
-LibName5=ic
-LibName6=mspower
-LibName7=opto
-LibName8=passives
-LibName9=power
-LibName10=simple
-LibName11=transistors
-LibName12=templates
+LibName1=reader-rescue
+LibName2=capacitors
+LibName3=connectors
+LibName4=cpu
+LibName5=discrete
+LibName6=ic
+LibName7=mspower
+LibName8=opto
+LibName9=passives
+LibName10=power
+LibName11=simple
+LibName12=transistors
+LibName13=templates
