@@ -17,16 +17,33 @@
 
 // This Arduino / Teensy pin is connected to the relay that opens the door 1
 #define DOOR_PIN       9
+// Sensing whether someone is pushing the door open button
+#define BUZZ_SENSE     10
+
+// Tamper detection pin
+#define TAMPER         8
 
 // This Arduino / Teensy pin is connected to the transistor that charges the battery
 #define CHARGE_PIN       19
+#define CHARGE_BATTERY_ADC 3
+#define CHARGE_CURR1_ADC 1
+#define CHARGE_CURR2_ADC 0
+#define CHARGE_VCC_ADC 10
 
+// Bluetooth pins
 #define BT_RESET 37
+#define BT_AT 36 // AT log.1, communication log.0
+#define BT_SERIAL 3
 
-// The software SPI SCK  pin (Clock)
-#define SPI_MODULE        3
-// The software SPI SSEL pin (Chip Select)
-#define SPI_CS_PIN        24
+// SPI flash memory
+#define MEM_CS 24
+#define MEM_SPI 3
+#define MEM_WP 27 // WP log.0
+
+// Reader
+#define READER_SERIAL 1
+#define READER_TX 2 // TX active log.0
+#define READER_ON 5 // ON log.0
 
 // This Arduino / Teensy pin is connected to the reader RSTPDN pin (reset the reader)
 // When a communication error with the reader is detected the board is reset automatically.
