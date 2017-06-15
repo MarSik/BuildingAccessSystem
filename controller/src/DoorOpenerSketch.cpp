@@ -437,9 +437,9 @@ void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick)
     }
 
     SetLED(LED_GREEN);
-    Utils::WritePin(DOOR_1_PIN, HIGH);
+    Utils::WritePin(DOOR_PIN, HIGH);
     LongDelay(OPEN_INTERVAL);
-    Utils::WritePin(DOOR_1_PIN, LOW);
+    Utils::WritePin(DOOR_PIN, LOW);
     LongDelay(1000);
     SetLED(LED_OFF);
 
@@ -698,11 +698,8 @@ void setup()
 {
     gs8_CommandBuffer[0] = 0;
 
-    Utils::SetPinMode(DOOR_1_PIN, OUTPUT);
-    Utils::WritePin  (DOOR_1_PIN, LOW);
-
-    Utils::SetPinMode(DOOR_2_PIN, OUTPUT);
-    Utils::WritePin  (DOOR_2_PIN, LOW);
+    Utils::SetPinMode(DOOR_PIN, OUTPUT);
+    Utils::WritePin  (DOOR_PIN, LOW);
 
     Utils::SetPinMode(CHARGE_PIN, OUTPUT);
     Utils::WritePin  (CHARGE_PIN, LOW);
