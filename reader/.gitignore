@@ -1,2 +1,5 @@
 .pioenvs
 .piolibdeps
+Toolchain-*
+build-*
+CMakeLists.txt
