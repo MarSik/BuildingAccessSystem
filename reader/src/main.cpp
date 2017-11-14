@@ -33,16 +33,23 @@ extern "C" {
 
 
 void LowLevelInit(void) {
-    OSC->CR |= OSC_CR_OSCEN_MASK | OSC_CR_RANGE_MASK | OSC_CR_OSCOS_MASK; // range high, crystal
-    while ((OSC->CR & OSC_CR_OSCINIT_MASK) == 0); /* waiting until oscillator is ready */
-
-    ICS->C1 = (0b01 << ICS_C1_RDIV_SHIFT); // ref divide by 256
-    // ICS->C1 &= ~ICS_C1_IREFS_MASK; // external source
-    // 40 Mhz
-
     SIM->SCGC |= SIM_SCGC_SWD_MASK
             | SIM_SCGC_FLASH_MASK
             ;
+
+    /*
+    OSC->CR |= OSC_CR_OSCEN_MASK
+            | OSC_CR_RANGE_MASK
+            | OSC_CR_OSCOS_MASK
+            | OSC_CR_OSCSTEN_MASK
+            | OSC_CR_HGO_MASK; // range high, crystal on, high gain
+    while ((OSC->CR & OSC_CR_OSCINIT_MASK) == 0); // waiting until oscillator is ready
+
+    ICS->C1 = (0b011 << ICS_C1_RDIV_SHIFT); // ref divide by 256
+    */
+
+    ICS->C1 = (0b000 << ICS_C1_RDIV_SHIFT | ICS_C1_IREFS_MASK); // ref divide by 1, internal
+
 }
 
 void SystemInit(void) { 
@@ -56,10 +63,10 @@ volatile uint8_t received = 0;
 volatile uint8_t buffer[8];
 volatile uint8_t state = 0;
 
-int main(void) {
-    const uint32_t PTC2 = 1 << 18;
-    const uint32_t PTC3 = 1 << 19;
+static const uint32_t PTC2 = 1 << 18;
+static const uint32_t PTC3 = 1 << 19;
 
+int main(void) {
     GPIOA->PIDR |= PTC2 | PTC3; // disable input
     GPIOA->PDDR |= PTC2 | PTC3; // set as output
     GPIOA->PSOR |= PTC2 | PTC3; // set output
@@ -74,6 +81,15 @@ int main(void) {
     // TX and RX enable
     UART0->C2 |= UART_C2_TE_MASK | UART_C2_RE_MASK;
 
+    SysTick->LOAD = 0xffffff;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk
+            | SysTick_CTRL_ENABLE_Msk
+            | SysTick_CTRL_TICKINT_Msk;
+
+    __enable_irq();
+
+    GPIOA->PTOR = PTC2; // toggle output
+
     while (1) {
     }
 }
@@ -82,6 +98,13 @@ void UART0_IRQHandler(void) {
   received = 1;
 }
 
+volatile uint8_t blink = 0;
 
+void SysTick_Handler(void) {
+    blink = (blink + 1) & 0b111;
+    if (!blink) {
+      GPIOA->PTOR = PTC2;
+    }
+}
 
 }
