@@ -1,17 +1,4 @@
-EESchema Schematic File Version 2
-LIBS:reader-rescue
-LIBS:capacitors
-LIBS:connectors
-LIBS:cpu
-LIBS:discrete
-LIBS:ic
-LIBS:mspower
-LIBS:opto
-LIBS:passives
-LIBS:power
-LIBS:simple
-LIBS:transistors
-LIBS:templates
+EESchema Schematic File Version 4
 LIBS:reader-cache
 EELAYER 26 0
 EELAYER END
@@ -28,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L MKE04P24M48SF0-RESCUE-reader U103
+L reader-rescue:MKE04P24M48SF0-RESCUE-reader U103
 U 1 1 591A19D8
 P 5850 3950
 F 0 "U103" H 5850 4937 60  0000 C CNN
@@ -39,7 +26,7 @@ F 3 "" H 5700 3650 60  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Wago_233-502 P101
+L connectors:Wago_233-502 P101
 U 1 1 591A1AB9
 P 1750 5400
 F 0 "P101" H 1828 5441 50  0000 L CNN
@@ -50,7 +37,7 @@ F 3 "" H 1750 5400 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Wago_233-502 P102
+L connectors:Wago_233-502 P102
 U 1 1 591A1B3F
 P 1750 6550
 F 0 "P102" H 1828 6591 50  0000 L CNN
@@ -61,7 +48,7 @@ F 3 "" H 1750 6550 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L CONN_01X08 P105
+L connectors:CONN_01X08 P105
 U 1 1 591A1E5B
 P 10400 4000
 F 0 "P105" H 10478 4041 50  0000 L CNN
@@ -72,7 +59,7 @@ F 3 "" H 10400 4000 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C104
+L simple:C C104
 U 1 1 591A1F28
 P 2300 7300
 F 0 "C104" H 2415 7346 50  0000 L CNN
@@ -83,7 +70,7 @@ F 3 "" H 2300 7300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L LP2992AIM5-3.3CT-ND U101
+L power:LP2992AIM5-3.3CT-ND U101
 U 1 1 591A260B
 P 2500 1450
 F 0 "U101" H 2500 1937 60  0000 C CNN
@@ -94,7 +81,7 @@ F 3 "" H 2500 1350 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C101
+L simple:C C101
 U 1 1 591A26E0
 P 1450 1450
 F 0 "C101" H 1564 1496 50  0000 L CNN
@@ -105,7 +92,7 @@ F 3 "" H 1450 1450 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L C C102
+L simple:C C102
 U 1 1 591A272E
 P 1800 1750
 F 0 "C102" H 1914 1796 50  0000 L CNN
@@ -116,7 +103,7 @@ F 3 "" H 1800 1750 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L C C106
+L simple:C C106
 U 1 1 591A27D8
 P 3350 1450
 F 0 "C106" H 3464 1496 50  0000 L CNN
@@ -127,7 +114,7 @@ F 3 "" H 3350 1450 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L SN75176BDR U102
+L ic:SN75176BDR U102
 U 1 1 591A2A34
 P 2850 6550
 F 0 "U102" H 2700 6950 60  0000 R CNN
@@ -138,7 +125,7 @@ F 3 "" H 2850 6550 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L R R101
+L simple:R R101
 U 1 1 591A2BE3
 P 2150 6550
 F 0 "R101" H 2220 6596 50  0000 L CNN
@@ -165,7 +152,7 @@ Wire Wire Line
 	2450 6700 2450 6650
 Connection ~ 2150 6700
 $Comp
-L GND #PWR01
+L mspower:GND #PWR01
 U 1 1 591A2EEE
 P 2000 5550
 F 0 "#PWR01" H 2000 5300 50  0001 C CNN
@@ -184,7 +171,7 @@ Wire Wire Line
 Wire Wire Line
 	2000 5200 2000 5350
 $Comp
-L C C103
+L simple:C C103
 U 1 1 591A2FC4
 P 2250 5400
 F 0 "C103" H 2365 5446 50  0000 L CNN
@@ -195,7 +182,7 @@ F 3 "" H 2250 5400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR02
+L mspower:GND #PWR02
 U 1 1 591A301B
 P 2250 5550
 F 0 "#PWR02" H 2250 5300 50  0001 C CNN
@@ -206,7 +193,7 @@ F 3 "" H 2250 5550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR03
+L mspower:GND #PWR03
 U 1 1 591A310F
 P 2650 5550
 F 0 "#PWR03" H 2650 5300 50  0001 C CNN
@@ -217,7 +204,7 @@ F 3 "" H 2650 5550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR04
+L mspower:GND #PWR04
 U 1 1 591A36EC
 P 2300 7450
 F 0 "#PWR04" H 2300 7200 50  0001 C CNN
@@ -228,7 +215,7 @@ F 3 "" H 2300 7450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR05
+L mspower:GND #PWR05
 U 1 1 591A3757
 P 2850 6850
 F 0 "#PWR05" H 2850 6600 50  0001 C CNN
@@ -257,7 +244,7 @@ Wire Wire Line
 Wire Wire Line
 	4850 4550 4300 4550
 $Comp
-L CONN_02X05 P103
+L connectors:CONN_02X05 P103
 U 1 1 591B7E46
 P 1900 3650
 F 0 "P103" H 1900 4065 50  0000 C CNN
@@ -268,7 +255,7 @@ F 3 "" H 1900 2450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR06
+L mspower:+3.3V #PWR06
 U 1 1 591B7F21
 P 3600 1200
 F 0 "#PWR06" H 3600 1050 50  0001 C CNN
@@ -279,7 +266,7 @@ F 3 "" H 3600 1200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR07
+L mspower:+3.3V #PWR07
 U 1 1 591B7F4F
 P 1450 3350
 F 0 "#PWR07" H 1450 3200 50  0001 C CNN
@@ -302,7 +289,7 @@ Text Label 7000 3950 0    60   ~ 0
 Text Label 2350 3850 0    60   ~ 0
 ~RESET
 $Comp
-L GND #PWR08
+L mspower:GND #PWR08
 U 1 1 591B80CB
 P 1450 3950
 F 0 "#PWR08" H 1450 3700 50  0001 C CNN
@@ -340,7 +327,7 @@ Wire Wire Line
 Wire Wire Line
 	6850 4250 7950 4250
 $Comp
-L VCC #PWR09
+L mspower:VCC #PWR09
 U 1 1 591B85E5
 P 950 1200
 F 0 "#PWR09" H 950 1050 50  0001 C CNN
@@ -383,7 +370,7 @@ Wire Wire Line
 	3600 1250 3600 1200
 Connection ~ 3350 1250
 $Comp
-L GND #PWR010
+L mspower:GND #PWR010
 U 1 1 591B892E
 P 2500 2050
 F 0 "#PWR010" H 2500 1800 50  0001 C CNN
@@ -396,7 +383,7 @@ $EndComp
 Wire Wire Line
 	950  1200 950  1250
 $Comp
-L GND #PWR011
+L mspower:GND #PWR011
 U 1 1 591B8BC6
 P 4700 3400
 F 0 "#PWR011" H 4700 3150 50  0001 C CNN
@@ -411,7 +398,7 @@ Wire Wire Line
 Wire Wire Line
 	4700 3350 4700 3400
 $Comp
-L +3.3V #PWR012
+L mspower:+3.3V #PWR012
 U 1 1 591B8C5A
 P 4700 3200
 F 0 "#PWR012" H 4700 3050 50  0001 C CNN
@@ -426,7 +413,7 @@ Wire Wire Line
 Wire Wire Line
 	4700 3250 4850 3250
 $Comp
-L VCC #PWR013
+L mspower:VCC #PWR013
 U 1 1 591B9127
 P 2000 5200
 F 0 "#PWR013" H 2000 5050 50  0001 C CNN
@@ -437,7 +424,7 @@ F 3 "" H 2000 5200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L VCC #PWR014
+L mspower:VCC #PWR014
 U 1 1 591B91AF
 P 2250 5200
 F 0 "#PWR014" H 2250 5050 50  0001 C CNN
@@ -448,7 +435,7 @@ F 3 "" H 2250 5200 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L VCC #PWR015
+L mspower:VCC #PWR015
 U 1 1 591B91D6
 P 2650 5200
 F 0 "#PWR015" H 2650 5050 50  0001 C CNN
@@ -463,7 +450,7 @@ Wire Wire Line
 Wire Wire Line
 	2650 5200 2650 5250
 $Comp
-L R R104
+L simple:R R104
 U 1 1 591B949B
 P 7550 3750
 F 0 "R104" V 7450 3750 50  0000 C CNN
@@ -474,7 +461,7 @@ F 3 "" H 7550 3750 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L +3.3V #PWR016
+L mspower:+3.3V #PWR016
 U 1 1 591B9529
 P 8500 3750
 F 0 "#PWR016" H 8500 3600 50  0001 C CNN
@@ -513,7 +500,7 @@ Wire Wire Line
 	3250 6650 3150 6650
 Connection ~ 3250 6550
 $Comp
-L R R103
+L simple:R R103
 U 1 1 591B9D0B
 P 4050 6800
 F 0 "R103" H 4120 6846 50  0000 L CNN
@@ -524,7 +511,7 @@ F 3 "" H 4050 6800 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR017
+L mspower:GND #PWR017
 U 1 1 591B9F1D
 P 4050 6950
 F 0 "#PWR017" H 4050 6700 50  0001 C CNN
@@ -542,7 +529,7 @@ Wire Wire Line
 Wire Wire Line
 	6850 4450 7450 4450
 $Comp
-L LED D101
+L simple:LED D101
 U 1 1 591BBBD3
 P 9050 1950
 F 0 "D101" H 9050 1705 50  0000 C CNN
@@ -553,7 +540,7 @@ F 3 "" H 9050 1950 60  0000 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L LED D102
+L simple:LED D102
 U 1 1 591BBCC5
 P 9050 2400
 F 0 "D102" H 9050 2155 50  0000 C CNN
@@ -564,7 +551,7 @@ F 3 "" H 9050 2400 60  0000 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L R R108
+L simple:R R108
 U 1 1 591C09A0
 P 8650 1950
 F 0 "R108" V 8443 1950 50  0000 C CNN
@@ -575,7 +562,7 @@ F 3 "" H 8650 1950 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R109
+L simple:R R109
 U 1 1 591C0A26
 P 8650 2400
 F 0 "R109" V 8443 2400 50  0000 C CNN
@@ -586,7 +573,7 @@ F 3 "" H 8650 2400 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MMBT2222A Q101
+L transistors:MMBT2222A Q101
 U 1 1 591C0AAE
 P 7600 2050
 F 0 "Q101" V 7928 2050 50  0000 C CNN
@@ -597,7 +584,7 @@ F 3 "" H 7600 2050 60  0000 C CNN
 	0    1    -1   0   
 $EndComp
 $Comp
-L MMBT2222A Q102
+L transistors:MMBT2222A Q102
 U 1 1 591C0B6C
 P 8200 2500
 F 0 "Q102" V 8528 2500 50  0000 C CNN
@@ -612,7 +599,7 @@ Wire Wire Line
 Wire Wire Line
 	8800 2400 8850 2400
 $Comp
-L VCC #PWR018
+L mspower:VCC #PWR018
 U 1 1 591C0EC3
 P 9450 1850
 F 0 "#PWR018" H 9450 1700 50  0001 C CNN
@@ -634,7 +621,7 @@ Wire Wire Line
 Wire Wire Line
 	8500 2400 8400 2400
 $Comp
-L R R105
+L simple:R R105
 U 1 1 591C10BA
 P 7600 2950
 F 0 "R105" H 7670 2996 50  0000 L CNN
@@ -645,7 +632,7 @@ F 3 "" H 7600 2950 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R107
+L simple:R R107
 U 1 1 591C1132
 P 8200 2950
 F 0 "R107" H 8270 2996 50  0000 L CNN
@@ -664,7 +651,7 @@ Wire Wire Line
 Wire Wire Line
 	8200 3100 8200 3550
 $Comp
-L GND #PWR019
+L mspower:GND #PWR019
 U 1 1 591C1366
 P 7200 2050
 F 0 "#PWR019" H 7200 1800 50  0001 C CNN
@@ -675,7 +662,7 @@ F 3 "" H 7200 2050 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR020
+L mspower:GND #PWR020
 U 1 1 591C13A8
 P 7850 2500
 F 0 "#PWR020" H 7850 2250 50  0001 C CNN
@@ -694,7 +681,7 @@ Wire Wire Line
 Wire Wire Line
 	7200 1950 7400 1950
 $Comp
-L CONN_01X02 P104
+L connectors:CONN_01X02 P104
 U 1 1 591C2772
 P 9600 5300
 F 0 "P104" H 9678 5341 50  0000 L CNN
@@ -705,7 +692,7 @@ F 3 "" H 9600 5300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR021
+L mspower:GND #PWR021
 U 1 1 591C2864
 P 9250 5450
 F 0 "#PWR021" H 9250 5200 50  0001 C CNN
@@ -716,7 +703,7 @@ F 3 "" H 9250 5450 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R111
+L simple:R R111
 U 1 1 591C28D8
 P 9250 5050
 F 0 "R111" H 9320 5096 50  0000 L CNN
@@ -738,7 +725,7 @@ Wire Wire Line
 Text Label 8750 5250 0    60   ~ 0
 TAMPER
 $Comp
-L +3.3V #PWR022
+L mspower:+3.3V #PWR022
 U 1 1 591C2C8E
 P 9250 4900
 F 0 "#PWR022" H 9250 4750 50  0001 C CNN
@@ -753,7 +740,7 @@ Wire Wire Line
 Text Label 4350 4250 0    60   ~ 0
 TAMPER
 $Comp
-L R R106
+L simple:R R106
 U 1 1 591E0B44
 P 7750 4450
 F 0 "R106" H 7820 4496 50  0000 L CNN
@@ -764,7 +751,7 @@ F 3 "" H 7750 4450 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR023
+L mspower:GND #PWR023
 U 1 1 591E0BDB
 P 7750 4600
 F 0 "#PWR023" H 7750 4350 50  0001 C CNN
@@ -780,7 +767,7 @@ Connection ~ 7750 4250
 Text Notes 7700 4300 0    60   ~ 0
 See MKE04P24M48SF0RM\n       Sect. 9.2 footnote 1
 $Comp
-L C C107
+L simple:C C107
 U 1 1 591E14AD
 P 3950 3600
 F 0 "C107" V 3700 3550 50  0000 L CNN
@@ -791,7 +778,7 @@ F 3 "" H 3950 3600 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L C C108
+L simple:C C108
 U 1 1 591E155E
 P 3950 3900
 F 0 "C108" V 4100 3850 50  0000 L CNN
@@ -802,29 +789,29 @@ F 3 "" H 3950 3900 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR024
+L mspower:GND #PWR024
 U 1 1 591E1877
-P 3500 3800
-F 0 "#PWR024" H 3500 3550 50  0001 C CNN
-F 1 "GND" H 3505 3627 50  0000 C CNN
-F 2 "" H 3500 3800 60  0000 C CNN
-F 3 "" H 3500 3800 60  0000 C CNN
-	1    3500 3800
+P 3200 3800
+F 0 "#PWR024" H 3200 3550 50  0001 C CNN
+F 1 "GND" H 3205 3627 50  0000 C CNN
+F 2 "" H 3200 3800 60  0000 C CNN
+F 3 "" H 3200 3800 60  0000 C CNN
+	1    3200 3800
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3500 3800 3500 3750
+	3200 3800 3200 3750
 Wire Wire Line
-	3500 3750 3700 3750
+	3200 3750 3400 3750
 Wire Wire Line
-	3700 3600 3700 3900
+	3400 3600 3400 3900
 Wire Wire Line
-	3700 3600 3800 3600
+	3400 3600 3800 3600
 Wire Wire Line
-	3700 3900 3800 3900
-Connection ~ 3700 3750
+	3400 3900 3800 3900
+Connection ~ 3400 3750
 $Comp
-L CRYSTAL X101
+L templates:CRYSTAL X101
 U 1 1 591E1AA3
 P 4200 3750
 F 0 "X101" V 4154 3833 50  0000 L CNN
@@ -857,7 +844,7 @@ Wire Wire Line
 Text Label 4400 4650 0    60   ~ 0
 CS
 $Comp
-L C C109
+L simple:C C109
 U 1 1 591EAF00
 P 4200 2700
 F 0 "C109" H 4315 2746 50  0000 L CNN
@@ -868,7 +855,7 @@ F 3 "" H 4200 2700 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR025
+L mspower:GND #PWR025
 U 1 1 591EB0C5
 P 4200 2850
 F 0 "#PWR025" H 4200 2600 50  0001 C CNN
@@ -879,7 +866,7 @@ F 3 "" H 4200 2850 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR026
+L mspower:+3.3V #PWR026
 U 1 1 591EB10E
 P 4200 2550
 F 0 "#PWR026" H 4200 2400 50  0001 C CNN
@@ -890,7 +877,7 @@ F 3 "" H 4200 2550 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR027
+L mspower:+3.3V #PWR027
 U 1 1 591EB194
 P 10050 3600
 F 0 "#PWR027" H 10050 3450 50  0001 C CNN
@@ -911,7 +898,7 @@ Text Label 6900 3250 0    60   ~ 0
 Text Label 10100 3750 2    60   ~ 0
 ~RE_RESET
 $Comp
-L GND #PWR028
+L mspower:GND #PWR028
 U 1 1 591EB64E
 P 9900 3850
 F 0 "#PWR028" H 9900 3600 50  0001 C CNN
@@ -950,7 +937,7 @@ Wire Wire Line
 Wire Wire Line
 	10200 4350 9600 4350
 $Comp
-L C C111
+L simple:C C111
 U 1 1 591EBE78
 P 10500 2800
 F 0 "C111" H 10615 2846 50  0000 L CNN
@@ -961,7 +948,7 @@ F 3 "" H 10500 2800 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR029
+L mspower:+3.3V #PWR029
 U 1 1 591EBF14
 P 10500 2650
 F 0 "#PWR029" H 10500 2500 50  0001 C CNN
@@ -972,7 +959,7 @@ F 3 "" H 10500 2650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR030
+L mspower:GND #PWR030
 U 1 1 591EBF5F
 P 10500 2950
 F 0 "#PWR030" H 10500 2700 50  0001 C CNN
@@ -983,7 +970,7 @@ F 3 "" H 10500 2950 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jamicon_220uF_16V_TKP C110
+L capacitors:Jamicon_220uF_16V_TKP C110
 U 1 1 591EC072
 P 10250 2800
 F 0 "C110" H 10364 2846 50  0000 L CNN
@@ -994,7 +981,7 @@ F 3 "" H 10250 2800 60  0000 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L GND #PWR031
+L mspower:GND #PWR031
 U 1 1 591EC146
 P 10250 2950
 F 0 "#PWR031" H 10250 2700 50  0001 C CNN
@@ -1005,7 +992,7 @@ F 3 "" H 10250 2950 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +3.3V #PWR032
+L mspower:+3.3V #PWR032
 U 1 1 591EC193
 P 10250 2650
 F 0 "#PWR032" H 10250 2500 50  0001 C CNN
@@ -1016,7 +1003,7 @@ F 3 "" H 10250 2650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jamicon_220uF_16V_TKP C105
+L capacitors:Jamicon_220uF_16V_TKP C105
 U 1 1 591EC4FC
 P 2650 5400
 F 0 "C105" H 2765 5446 50  0000 L CNN
@@ -1027,7 +1014,7 @@ F 3 "" H 2650 5400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R110
+L simple:R R110
 U 1 1 591ED0C5
 P 9250 3950
 F 0 "R110" H 9320 3996 50  0000 L CNN
@@ -1041,7 +1028,7 @@ Wire Wire Line
 	9250 3750 9250 3800
 Connection ~ 9250 3750
 $Comp
-L GND #PWR033
+L mspower:GND #PWR033
 U 1 1 591ED330
 P 9250 4100
 F 0 "#PWR033" H 9250 3850 50  0001 C CNN
@@ -1052,7 +1039,7 @@ F 3 "" H 9250 4100 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R102
+L simple:R R102
 U 1 1 591ED3BF
 P 3800 4650
 F 0 "R102" V 3593 4650 50  0000 C CNN
@@ -1063,7 +1050,7 @@ F 3 "" H 3800 4650 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L +3.3V #PWR034
+L mspower:+3.3V #PWR034
 U 1 1 591ED52F
 P 3500 4550
 F 0 "#PWR034" H 3500 4400 50  0001 C CNN
@@ -1078,7 +1065,7 @@ Wire Wire Line
 Wire Wire Line
 	3500 4650 3650 4650
 $Comp
-L VCC #PWR035
+L mspower:VCC #PWR035
 U 1 1 591EE20F
 P 2850 6250
 F 0 "#PWR035" H 2850 6100 50  0001 C CNN
@@ -1089,7 +1076,7 @@ F 3 "" H 2850 6250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L VCC #PWR036
+L mspower:VCC #PWR036
 U 1 1 591EE39C
 P 2300 7150
 F 0 "#PWR036" H 2300 7000 50  0001 C CNN
@@ -1100,7 +1087,7 @@ F 3 "" H 2300 7150 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG037
+L mspower:PWR_FLAG #FLG037
 U 1 1 591EE76F
 P 750 4800
 F 0 "#FLG037" H 750 4895 50  0001 C CNN
@@ -1111,7 +1098,7 @@ F 3 "" H 750 4800 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L VCC #PWR038
+L mspower:VCC #PWR038
 U 1 1 591EE855
 P 750 4800
 F 0 "#PWR038" H 750 4650 50  0001 C CNN
@@ -1122,7 +1109,7 @@ F 3 "" H 750 4800 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG039
+L mspower:PWR_FLAG #FLG039
 U 1 1 591EE8EE
 P 1100 4850
 F 0 "#FLG039" H 1100 4945 50  0001 C CNN
@@ -1133,7 +1120,7 @@ F 3 "" H 1100 4850 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR040
+L mspower:GND #PWR040
 U 1 1 591EE98E
 P 1100 4850
 F 0 "#PWR040" H 1100 4600 50  0001 C CNN
@@ -1154,7 +1141,7 @@ Wire Wire Line
 Text Label 6900 3350 0    60   ~ 0
 IRQ
 $Comp
-L +3.3V #PWR041
+L mspower:+3.3V #PWR041
 U 1 1 59272043
 P 7000 5000
 F 0 "#PWR041" H 7000 4850 50  0001 C CNN
@@ -1165,7 +1152,7 @@ F 3 "" H 7000 5000 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L R R112
+L simple:R R112
 U 1 1 5927213E
 P 7200 5000
 F 0 "R112" V 7300 5000 50  0000 C CNN
@@ -1184,4 +1171,17 @@ Wire Wire Line
 	7000 5000 7050 5000
 Text Notes 5200 6100 0    60   ~ 0
 PTA3 is open drain output, external pull-up might be\nnecessary see Figure 11-2 in the Kinetis KEO4Z\nuser manual.\n\nBut the input of SN75176 is pulled up internally so\nin this case the resistor is probably not needed. \nSee Figure 19 of TI's sn75176b.pdf\n\nI am keeping the R here just in case it is needed\nfor reliable operation.
+$Comp
+L simple:R R?
+U 1 1 5A10499B
+P 3550 3750
+F 0 "R?" H 3620 3796 50  0000 L CNN
+F 1 "10M" H 3620 3705 50  0000 L CNN
+F 2 "" V 3480 3750 30  0000 C CNN
+F 3 "" H 3550 3750 30  0000 C CNN
+	1    3550 3750
+	1    0    0    -1  
+$EndComp
+Connection ~ 3550 3600
+Connection ~ 3550 3900
 $EndSCHEMATC

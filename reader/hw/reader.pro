@@ -1,4 +1,4 @@
-update=So 10. červen 2017, 12:40:17 CEST
+update=Pá 17. listopad 2017, 15:46:58 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -27,18 +27,4 @@ NetIExt=net
 version=1
 [eeschema]
 version=1
-LibDir=/home/msivak/Developer/KiCad/components
-[eeschema/libraries]
-LibName1=reader-rescue
-LibName2=capacitors
-LibName3=connectors
-LibName4=cpu
-LibName5=discrete
-LibName6=ic
-LibName7=mspower
-LibName8=opto
-LibName9=passives
-LibName10=power
-LibName11=simple
-LibName12=transistors
-LibName13=templates
+LibDir=
