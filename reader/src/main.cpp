@@ -17,7 +17,7 @@
  * > END frame break
  * - delay X ms
  * < START
- * < 1B status
+ * < 1B status (0x00 = OK, 0xFF = ERROR)
  * < X B SPI response
  * < END frame break
  *
@@ -38,6 +38,9 @@ typedef struct {
 
 volatile Buffer_t TxBuffer;
 volatile Buffer_t RxBuffer;
+
+static volatile uint8_t spiSent = 0;
+static volatile uint8_t spiReceived = 0;
 
 static const uint8_t FRAME_MARKER_START = '{';
 static const uint8_t FRAME_MARKER_ESC = '\\';
@@ -65,6 +68,8 @@ void serialQueueEnd();
 void serialQueueBuffer(volatile Buffer_t* buffer);
 void serialQueue(uint8_t byte);
 
+static volatile uint8_t _delayedSend = 0;
+
 extern "C" {
 
 
@@ -76,11 +81,12 @@ void LowLevelInit(void) {
     OSC->CR |= OSC_CR_OSCEN_MASK
             | OSC_CR_RANGE_MASK
             | OSC_CR_OSCOS_MASK
-            | OSC_CR_OSCSTEN_MASK
-            | OSC_CR_HGO_MASK; // range high, crystal on, high gain
+            | OSC_CR_OSCSTEN_MASK; // range high, crystal on, auto gain
+
     while ((OSC->CR & OSC_CR_OSCINIT_MASK) == 0); // waiting until oscillator is ready
 
-    ICS->C1 = (0b011 << ICS_C1_RDIV_SHIFT); // ref divide by 256
+    ICS->C1 = (0b011 << ICS_C1_RDIV_SHIFT); // ref divide by 256 -> 40 Mhz main clock
+    ICS->C2 = 0;
 
     //ICS->C1 = (0b000 << ICS_C1_RDIV_SHIFT | ICS_C1_IREFS_MASK); // ref divide by 1, internal
 
@@ -102,9 +108,12 @@ int main(void) {
     // UART on PTA2 / PTA3
     SIM->PINSEL |= SIM_PINSEL_UART0PS_MASK;
 
+    // Configure clock dividers (1 / 2 / 1) to set Bus clock = System clock / 2 -> 20 Mhz
+    SIM->CLKDIV = SIM_CLKDIV_OUTDIV2_MASK;
+
     // UART prescaler
     UART0->BDH = 0;
-    UART0->BDL = 22; // 40Mhz, 115200 baud, error -1.36%
+    UART0->BDL = 11; // Bus clock 20Mhz, 115200 baud, error -1.36%
 
     // TX and RX enable, incl. interrupts
     UART0->C2 |= UART_C2_TE_MASK
@@ -113,8 +122,18 @@ int main(void) {
 
     NVIC_EnableIRQ(UART0_IRQn);
 
+    // Configure SPI0
+    SPI0->C1 = SPI_C1_SPE_MASK
+               | SPI_C1_SPIE_MASK
+               | SPI_C1_MSTR_MASK;
+
+    SPI0->C2 = 0;
+    SPI0->BR = SPI_BR_SPPR_MASK | 0b0010; // prescalers 8 and 8 -> cca 300kHz SPI clock
+
+    NVIC_EnableIRQ(SPI0_IRQn);
+
     // Configure SysTick
-    SysTick->LOAD = 0xffffff;
+    SysTick->LOAD = 0x8fffff;
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk
             | SysTick_CTRL_ENABLE_Msk
             | SysTick_CTRL_TICKINT_Msk;
@@ -135,22 +154,70 @@ int main(void) {
 
             // Toggle leds based on commands
             if (RxBuffer.size == 1
-                    && RxBuffer.buffer[0] == 0x01) {
+                && RxBuffer.buffer[0] == 0x01) {
                 GPIOA->PTOR = PTC2;
+                serialQueue(0x00); // OK marker
+                serialQueueEnd();
+                _delayedSend = 4;
+                continue;
             }
 
             if (RxBuffer.size == 1
                 && RxBuffer.buffer[0] == 0x02) {
                 GPIOA->PTOR = PTC3;
+                serialQueue(0x00); // OK marker
+                serialQueueEnd();
+                _delayedSend = 4;
+                continue;
+            }
+
+            if (RxBuffer.size > 1
+                && RxBuffer.buffer[0] == 0x00
+                && SPI0->S & SPI_S_SPTEF_MASK) {
+                RxBuffer.cur++; // Skip command byte
+                serialQueue(0x00); // OK marker
+
+                // Pass first data byte to SPI and enable interrupts
+                spiSent = 1;
+                spiReceived = 0;
+                SPI0->D = RxBuffer.buffer[RxBuffer.cur++];
+                SPI0->C1 |= SPI_C1_SPTIE_MASK;
+                continue;
             }
 
             // Echo data back (DEBUG)
+            serialQueue(0xff); // error marker
             serialQueueBuffer(&RxBuffer);
             serialQueueEnd();
-            serialSend();
+            _delayedSend = 4;
         }
 
         __WFI();
+    }
+}
+
+void SPI0_IRQHandler(void) {
+    uint8_t status = SPI0->S;
+    if (status & SPI_S_SPRF_MASK) {
+        const uint8_t data = SPI0->D;
+        serialQueue(data);
+        spiReceived++;
+        if (spiReceived == spiSent) {
+            // Last byte processed, trigger uart
+            serialQueueEnd();
+            _delayedSend = 4;
+        }
+    }
+
+    if (status & SPI_S_SPTEF_MASK) {
+        if (RxBuffer.cur < RxBuffer.size) {
+            SPI0->D = RxBuffer.buffer[RxBuffer.cur++];
+            spiSent++;
+            if (RxBuffer.cur == RxBuffer.size) {
+                // Last byte queued; disable TX interrupt
+                SPI0->C1 &= ~SPI_C1_SPTIE_MASK;
+            }
+        }
     }
 }
 
@@ -159,8 +226,10 @@ void UART0_IRQHandler(void) {
     uint8_t s1 = UART0->S1;
     if (s1 & UART_S1_RDRF_MASK) {
         uint8_t data = UART0->D;
+
         switch (FrameState) {
             case FRAME_IDLE:
+                // Start frame is used for resynchronization
                 if (data == FRAME_MARKER_START) {
                     FrameState = FRAME_ACTIVE;
                     RxBuffer.cur = RxBuffer.size = 0;
@@ -176,10 +245,17 @@ void UART0_IRQHandler(void) {
             case FRAME_ESC:
                 data ^= FRAME_MARKER_ESC_XOR;
                 RxBuffer.buffer[RxBuffer.size++] = data;
+                FrameState = FRAME_ACTIVE;
                 break;
 
             case FRAME_ACTIVE:
                 switch (data) {
+                    case FRAME_MARKER_START:
+                        // Start frame is used for resynchronization
+                        // and cannot appear in data
+                        FrameState = FRAME_ACTIVE;
+                        RxBuffer.cur = RxBuffer.size = 0;
+                        break;
                     case FRAME_MARKER_ESC:
                         FrameState = FRAME_ESC;
                         break;
@@ -216,6 +292,13 @@ void UART0_IRQHandler(void) {
 
 void SysTick_Handler(void) {
     GPIOA->PTOR = PTC2;
+
+    // Perform delayed send
+    if (_delayedSend > 0) {
+        if((--_delayedSend) == 0) {
+            serialSend();
+        }
+    }
 }
 
 }
