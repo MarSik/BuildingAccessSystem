@@ -1,5 +1,18 @@
 #include "mke04z4.h"
 
+/* !!! Check schematic errata
+ * = V1 =
+ * Real MISO pin is connected to PTB4, but the P105 header's MISO signal
+ * is connected to PTB1.
+ *
+ * Workaround:
+ * use TAMPER as MISO and MISO as TAMPER (needs external pull-up)
+ *
+ * = V2 =
+ * TAMPER and MISO mixup sorted out. Software uses PTB4 as MISO.
+ *
+ */
+
 /*
  * The goal is to convert rs485 stream to SPI commands for
  * NFC card reader + allow additional commands:
@@ -15,7 +28,7 @@
  * > 1B high level command [LED, SPI, RESET]
  * > X B SPI data
  * > END frame break
- * - delay X ms
+ * - delay 500us
  * < START
  * < 1B status (0x00 = OK, 0xFF = ERROR)
  * < X B SPI response
@@ -74,6 +87,15 @@ extern "C" {
 
 
 void LowLevelInit(void) {
+    // Reconfigure watchdog
+    __disable_irq();
+    WDOG->CNT = 0x20C5; // unlock configuration
+    WDOG->CNT = 0x28D9;
+    WDOG->TOVAL = 30000; // 30s reset
+    WDOG->CS2 = WDOG_CS2_CLK_MASK; // setting 1-kHz clock source
+    WDOG->CS1 = WDOG_CS1_EN_MASK; // enable counter running
+    __enable_irq();
+
     SIM->SCGC |= SIM_SCGC_SWD_MASK
             | SIM_SCGC_FLASH_MASK
             ;
@@ -123,6 +145,8 @@ int main(void) {
     NVIC_EnableIRQ(UART0_IRQn);
 
     // Configure SPI0
+    // TODO XXX MISO = PTB4 - collides with my tamper connector
+    // remove tamper resistor and connect PTB4 with PTB1 in rev.1 of the board
     SPI0->C1 = SPI_C1_SPE_MASK
                | SPI_C1_SPIE_MASK
                | SPI_C1_MSTR_MASK;
@@ -133,7 +157,7 @@ int main(void) {
     NVIC_EnableIRQ(SPI0_IRQn);
 
     // Configure SysTick
-    SysTick->LOAD = 0x8fffff;
+    SysTick->LOAD = 200000; // 500us
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk
             | SysTick_CTRL_ENABLE_Msk
             | SysTick_CTRL_TICKINT_Msk;
@@ -148,6 +172,12 @@ int main(void) {
 
     // Main echo loop
     while (1) {
+        /* Reset watchdog clock */
+        __disable_irq();
+        WDOG->CNT = 0x02A6;
+        WDOG->CNT = 0x80B4;
+        __enable_irq();
+
         if (FrameState == FRAME_DONE) {
             // Process received data - echo it back
             FrameState = FRAME_IDLE;
@@ -158,7 +188,7 @@ int main(void) {
                 GPIOA->PTOR = PTC2;
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = 4;
+                _delayedSend = 2;
                 continue;
             }
 
@@ -167,9 +197,11 @@ int main(void) {
                 GPIOA->PTOR = PTC3;
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = 4;
+                _delayedSend = 2;
                 continue;
             }
+
+            // TODO SPI CS set/clear logic
 
             if (RxBuffer.size > 1
                 && RxBuffer.buffer[0] == 0x00
@@ -181,7 +213,9 @@ int main(void) {
                 spiSent = 1;
                 spiReceived = 0;
                 SPI0->D = RxBuffer.buffer[RxBuffer.cur++];
-                SPI0->C1 |= SPI_C1_SPTIE_MASK;
+                if (RxBuffer.cur < RxBuffer.size) {
+                    SPI0->C1 |= SPI_C1_SPTIE_MASK;
+                }
                 continue;
             }
 
@@ -189,7 +223,7 @@ int main(void) {
             serialQueue(0xff); // error marker
             serialQueueBuffer(&RxBuffer);
             serialQueueEnd();
-            _delayedSend = 4;
+            _delayedSend = 2;
         }
 
         __WFI();
@@ -205,7 +239,7 @@ void SPI0_IRQHandler(void) {
         if (spiReceived == spiSent) {
             // Last byte processed, trigger uart
             serialQueueEnd();
-            _delayedSend = 4;
+            _delayedSend = 2;
         }
     }
 
@@ -291,8 +325,6 @@ void UART0_IRQHandler(void) {
 }
 
 void SysTick_Handler(void) {
-    GPIOA->PTOR = PTC2;
-
     // Perform delayed send
     if (_delayedSend > 0) {
         if((--_delayedSend) == 0) {

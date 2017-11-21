@@ -6,8 +6,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title ""
-Date ""
-Rev ""
+Date "2017-11-22"
+Rev "2"
 Comp ""
 Comment1 ""
 Comment2 ""
@@ -229,7 +229,7 @@ Text Label 7000 4650 0    60   ~ 0
 CPU_TX
 Text Label 7000 4550 0    60   ~ 0
 CPU_RX
-Text Label 4400 4550 0    60   ~ 0
+Text Label 4400 4250 0    60   ~ 0
 MISO
 Text Label 4400 4350 0    60   ~ 0
 MOSI
@@ -737,7 +737,7 @@ F 3 "" H 9250 4900 60  0000 C CNN
 $EndComp
 Wire Wire Line
 	4850 4250 4300 4250
-Text Label 4350 4250 0    60   ~ 0
+Text Label 4350 4550 0    60   ~ 0
 TAMPER
 $Comp
 L simple:R R106
@@ -769,23 +769,23 @@ See MKE04P24M48SF0RM\n       Sect. 9.2 footnote 1
 $Comp
 L simple:C C107
 U 1 1 591E14AD
-P 3950 3600
-F 0 "C107" V 3700 3550 50  0000 L CNN
-F 1 "C" V 3800 3550 50  0000 L CNN
-F 2 "smd-handsolder:C_1206_HandSoldering" H 3988 3450 30  0001 C CNN
-F 3 "" H 3950 3600 60  0000 C CNN
-	1    3950 3600
+P 3600 3600
+F 0 "C107" V 3350 3550 50  0000 L CNN
+F 1 "C" V 3450 3550 50  0000 L CNN
+F 2 "smd-handsolder:C_1206_HandSoldering" H 3638 3450 30  0001 C CNN
+F 3 "" H 3600 3600 60  0000 C CNN
+	1    3600 3600
 	0    1    1    0   
 $EndComp
 $Comp
 L simple:C C108
 U 1 1 591E155E
-P 3950 3900
-F 0 "C108" V 4100 3850 50  0000 L CNN
-F 1 "C" V 4200 3850 50  0000 L CNN
-F 2 "smd-handsolder:C_1206_HandSoldering" H 3988 3750 30  0001 C CNN
-F 3 "" H 3950 3900 60  0000 C CNN
-	1    3950 3900
+P 3600 3900
+F 0 "C108" V 3750 3850 50  0000 L CNN
+F 1 "C" V 3850 3850 50  0000 L CNN
+F 2 "smd-handsolder:C_1206_HandSoldering" H 3638 3750 30  0001 C CNN
+F 3 "" H 3600 3900 60  0000 C CNN
+	1    3600 3900
 	0    1    1    0   
 $EndComp
 $Comp
@@ -806,9 +806,9 @@ Wire Wire Line
 Wire Wire Line
 	3400 3600 3400 3900
 Wire Wire Line
-	3400 3600 3800 3600
+	3400 3600 3450 3600
 Wire Wire Line
-	3400 3900 3800 3900
+	3400 3900 3450 3900
 Connection ~ 3400 3750
 $Comp
 L templates:CRYSTAL X101
@@ -822,11 +822,11 @@ F 3 "" H 4200 3750 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	4100 3600 4500 3600
+	3750 3600 4500 3600
 Wire Wire Line
 	4200 3600 4200 3650
 Wire Wire Line
-	4100 3900 4500 3900
+	3750 3900 4500 3900
 Wire Wire Line
 	4200 3900 4200 3850
 Wire Wire Line
@@ -1172,16 +1172,28 @@ Wire Wire Line
 Text Notes 5200 6100 0    60   ~ 0
 PTA3 is open drain output, external pull-up might be\nnecessary see Figure 11-2 in the Kinetis KEO4Z\nuser manual.\n\nBut the input of SN75176 is pulled up internally so\nin this case the resistor is probably not needed. \nSee Figure 19 of TI's sn75176b.pdf\n\nI am keeping the R here just in case it is needed\nfor reliable operation.
 $Comp
-L simple:R R?
+L simple:R R113
 U 1 1 5A10499B
-P 3550 3750
-F 0 "R?" H 3620 3796 50  0000 L CNN
-F 1 "10M" H 3620 3705 50  0000 L CNN
-F 2 "" V 3480 3750 30  0000 C CNN
-F 3 "" H 3550 3750 30  0000 C CNN
-	1    3550 3750
+P 3800 3750
+F 0 "R113" H 3870 3796 50  0000 L CNN
+F 1 "10M" H 3870 3705 50  0000 L CNN
+F 2 "smd-handsolder:R_1206_HandSoldering" V 3730 3750 30  0001 C CNN
+F 3 "" H 3800 3750 30  0000 C CNN
+	1    3800 3750
 	1    0    0    -1  
 $EndComp
-Connection ~ 3550 3600
-Connection ~ 3550 3900
+Text Notes 3400 5400 0    60   ~ 0
+!!! Errata:\nVersion 1 has switched MISO\nand TAMPER pins like this:\nMISO - PTB1\nTAMPER - PTB4\n 
+Text Notes 2300 3050 0    60   ~ 0
+!!! Errata:\nR113 is necessary, but missing from\nversion 1 of the project
+Wire Notes Line
+	3350 4900 3350 4300
+Wire Notes Line
+	3350 4300 4200 4300
+Connection ~ 3800 3600
+Connection ~ 3800 3900
+Wire Notes Line
+	3450 3050 3800 3050
+Wire Notes Line
+	3800 3050 3800 3550
 $EndSCHEMATC
