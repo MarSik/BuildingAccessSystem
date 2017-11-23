@@ -139,14 +139,19 @@ void SetLED(eLED e_LED)
     Utils::WritePin(LED_GREEN_PIN, LOW);
     Utils::WritePin(LED_BUILTIN,   LOW);
 
+    mfrcIntf.led(1, true);
+    mfrcIntf.led(2, true);
+
     switch (e_LED)
     {
         case LED_RED:
             Utils::WritePin(LED_RED_PIN, HIGH);
+            mfrcIntf.led(1, true);
             //Utils::WritePin(LED_BUILTIN, HIGH); // LED on Teensy
             break;
         case LED_GREEN:
             Utils::WritePin(LED_GREEN_PIN, HIGH);
+            mfrcIntf.led(2, true);
             //Utils::WritePin(LED_BUILTIN,   HIGH); // LED on Teensy
             break;
         default:  // Just to avoid stupid gcc compiler warning

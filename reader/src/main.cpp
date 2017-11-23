@@ -44,7 +44,7 @@
 
 // UART status
 typedef struct {
-    uint8_t buffer[8];
+    uint8_t buffer[64];
     uint8_t cur = 0;
     uint8_t size = 0;
 } Buffer_t;
