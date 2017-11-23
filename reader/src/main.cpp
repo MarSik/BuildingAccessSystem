@@ -74,6 +74,7 @@ static const uint32_t PTC0 = 1 << 16; // ~RESET for card reader
 static const uint32_t PTC2 = 1 << 18; // Led 1
 static const uint32_t PTC3 = 1 << 19; // Led 2
 static const uint32_t PTA1 = 1 <<  1; // TXEN for RS485 driver
+static const uint32_t PTB0 = 1 <<  8; // CS
 
 void _sendNextByte();
 bool serialSend();
@@ -121,10 +122,10 @@ void SystemInit(void) {
 }
 
 int main(void) {
-    GPIOA->PIDR |= PTC2 | PTC3 | PTA1 | PTC0; // disable input
-    GPIOA->PDDR |= PTC2 | PTC3 | PTA1 | PTC0; // set as output
+    GPIOA->PIDR |= PTC2 | PTC3 | PTA1 | PTC0 | PTB0; // disable input
+    GPIOA->PDDR |= PTC2 | PTC3 | PTA1 | PTC0 | PTB0; // set as output
 
-    GPIOA->PSOR = PTC2 | PTC3 | PTC0; // set output to 1
+    GPIOA->PSOR = PTC2 | PTC3 | PTC0 | PTB0; // set output to 1
     GPIOA->PCOR = PTA1; // clear output to 0
 
     // UART on PTA2 / PTA3
@@ -162,13 +163,7 @@ int main(void) {
             | SysTick_CTRL_ENABLE_Msk
             | SysTick_CTRL_TICKINT_Msk;
 
-    GPIOA->PTOR = PTC2; // toggle output
-
-    // Announce itself
-    serialQueue('O');
-    serialQueue('K');
-    serialQueueEnd();
-    serialSend();
+    GPIOA->PTOR = PTC2 | PTC3; // toggle outputs off
 
     // Main echo loop
     while (1) {
@@ -182,26 +177,56 @@ int main(void) {
             // Process received data - echo it back
             FrameState = FRAME_IDLE;
 
-            // Toggle leds based on commands
-            if (RxBuffer.size == 1
+            // Set pins
+            if (RxBuffer.size == 2
                 && RxBuffer.buffer[0] == 0x01) {
-                GPIOA->PTOR = PTC2;
+                if (RxBuffer.buffer[1] & 0b001) {
+                    GPIOA->PSOR = PTB0;
+                }
+
+                if (RxBuffer.buffer[1] & 0b010) {
+                    GPIOA->PSOR = PTC2;
+                }
+
+                if (RxBuffer.buffer[1] & 0b100) {
+                    GPIOA->PSOR = PTC3;
+                }
+
+                if (RxBuffer.buffer[1] & 0b1000) {
+                    GPIOA->PSOR = PTC0;
+                }
+
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
                 _delayedSend = 2;
                 continue;
             }
 
-            if (RxBuffer.size == 1
+            // Clear pins
+            if (RxBuffer.size == 2
                 && RxBuffer.buffer[0] == 0x02) {
-                GPIOA->PTOR = PTC3;
+                if (RxBuffer.buffer[1] & 0b001) {
+                    GPIOA->PCOR = PTB0;
+                }
+
+                if (RxBuffer.buffer[1] & 0b010) {
+                    GPIOA->PCOR = PTC2;
+                }
+
+                if (RxBuffer.buffer[1] & 0b100) {
+                    GPIOA->PCOR = PTC3;
+                }
+
+                if (RxBuffer.buffer[1] & 0b1000) {
+                    GPIOA->PCOR = PTC0;
+                }
+
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
                 _delayedSend = 2;
                 continue;
             }
 
-            // TODO SPI CS set/clear logic
 
             if (RxBuffer.size > 1
                 && RxBuffer.buffer[0] == 0x00
@@ -216,6 +241,20 @@ int main(void) {
                 if (RxBuffer.cur < RxBuffer.size) {
                     SPI0->C1 |= SPI_C1_SPTIE_MASK;
                 }
+                continue;
+            }
+
+            // About
+            if (RxBuffer.size == 1
+                && RxBuffer.buffer[0] == 0xFF) {
+
+                serialQueue(0x00); // OK marker
+
+                // Announce itself
+                serialQueue('O');
+                serialQueue('K');
+                serialQueueEnd();
+                _delayedSend = 2;
                 continue;
             }
 

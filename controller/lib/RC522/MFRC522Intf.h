@@ -51,6 +51,91 @@ private:
   }
 };
 
+class MFRC522IntfSpiOver485
+{
+public:
+    MFRC522IntfSpiOver485(HardwareSerial & serial):_serial(serial)
+    {
+    }
+
+    void init() const;
+    void begin() const;
+
+    boolean PCD_WriteRegister(const PCD_Register reg, const byte value) const;
+    boolean PCD_WriteRegister(const PCD_Register reg, const byte count, byte const * const values) const;
+    int PCD_ReadRegister(const PCD_Register reg) const;
+    boolean PCD_ReadRegister(const PCD_Register reg, byte count, byte * const values,
+                             const byte rxAlign = 0) const;
+    void end() const;
+
+    // Toggle LED, no is 1 or 2, value controls the power
+    void led(uint8_t no, bool value) const;
+
+    void flush() const {
+        while (_serial.available()) {
+            auto b = _serial.read();
+            Serial.write("Discarding PCD byte: ");
+            Serial.println(b);
+        }
+    }
+
+private:
+    HardwareSerial & _serial;
+
+    const int ESC_XOR = 0x20;
+    const int ESC = '\\';
+    const int START_FRAME = '{';
+    const int END_FRAME = '}';
+
+    int waitRead() const {
+        int rx;
+        uint32_t timeout = millis() + 100;
+
+        do {
+            rx = _serial.read();
+        } while(rx == -1 && timeout > millis());
+        return rx;
+    }
+
+    int waitFrame() const {
+        int rx;
+        do {
+            rx = waitRead();
+        } while(rx != -1 && rx != START_FRAME);
+        return rx;
+    };
+
+    void writeByte(int x) const {
+        if (x & 0x70) {
+            x ^= ESC_XOR;
+            _serial.write('\\');
+        }
+        _serial.write(x);
+    }
+
+    int readByte() const {
+        int rx = waitRead();
+        if (rx == ESC) {
+            rx = waitRead();
+            if (rx >= 0) {
+                rx ^= ESC_XOR;
+            }
+        }
+        return rx;
+    }
+
+    void dropFrameData() const {
+        while (readByte() != END_FRAME) {
+
+        }
+    }
+
+    void dropFrame() const {
+        waitFrame();
+        dropFrameData();
+    }
+};
+
 class MFRC522IntfSpi
 {
 public:

@@ -110,9 +110,9 @@
 
 DCF77 DCF = DCF77(DCF77_PIN, DCF77_PIN);
 
-MFRC522IntfSerial mfrcIntf(Serial1);
-MFRC522Ultralight<MFRC522IntfSerial> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
-CardManager<MFRC522IntfSerial> cardManager(mfrc522);
+MFRC522IntfSpiOver485 mfrcIntf(Serial1);
+MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+CardManager<MFRC522IntfSpiOver485> cardManager(mfrc522);
 
 // The tick counter starts at zero when the CPU is reset.
 // This interval is added to the 64 bit tick count to get a value that does not start at zero,
