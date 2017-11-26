@@ -2,8 +2,9 @@
 #define CARDMANAGER_H
 
 #include <Arduino.h>
+#undef min
+#undef max
 
-#include <cstdint>
 #include <array.h>
 #include <MFRC522Ultralight.h>
 #include "Secrets.h"

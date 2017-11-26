@@ -9,6 +9,8 @@
 #define SECRETS_H
 
 #include <Arduino.h>
+#undef min
+#undef max
 
 // This reader is used to open door group no. 1
 extern byte DOOR_ID;

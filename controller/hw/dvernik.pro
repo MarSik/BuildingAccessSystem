@@ -1,4 +1,4 @@
-update=Ne 26. březen 2017, 14:43:08 CEST
+update=Po 27. listopad 2017, 00:28:52 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -27,23 +27,4 @@ NetIExt=net
 version=1
 [eeschema]
 version=1
-LibDir=/home/msivak/Developer/KiCad/components
-[eeschema/libraries]
-LibName1=74xx
-LibName2=boards
-LibName3=buttons
-LibName4=capacitors
-LibName5=connectors
-LibName6=cpu
-LibName7=discrete
-LibName8=drivers
-LibName9=ic
-LibName10=mspower
-LibName11=opto
-LibName12=passives
-LibName13=power
-LibName14=relay
-LibName15=rf
-LibName16=simple
-LibName17=transistors
-LibName18=templates
+LibDir=

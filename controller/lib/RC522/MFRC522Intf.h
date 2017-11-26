@@ -54,7 +54,7 @@ private:
 class MFRC522IntfSpiOver485
 {
 public:
-    MFRC522IntfSpiOver485(HardwareSerial & serial):_serial(serial)
+    MFRC522IntfSpiOver485(HardwareSerial & serial, uint8_t txEn):_serial(serial),_txEn(txEn)
     {
     }
 
@@ -81,11 +81,22 @@ public:
 
 private:
     HardwareSerial & _serial;
+    uint8_t _txEn;
 
     const int ESC_XOR = 0x20;
     const int ESC = '\\';
     const int START_FRAME = '{';
     const int END_FRAME = '}';
+
+    void tx(void) const {
+      pinMode(_txEn, OUTPUT);
+      digitalWrite(_txEn, LOW);
+    }
+
+    void rx(void) const {
+      pinMode(_txEn, INPUT);
+      digitalWrite(_txEn, HIGH);
+    }
 
     int waitRead() const {
         int rx;

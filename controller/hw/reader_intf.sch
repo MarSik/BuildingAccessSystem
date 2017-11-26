@@ -1,22 +1,4 @@
-EESchema Schematic File Version 2
-LIBS:74xx
-LIBS:boards
-LIBS:buttons
-LIBS:capacitors
-LIBS:connectors
-LIBS:cpu
-LIBS:discrete
-LIBS:drivers
-LIBS:ic
-LIBS:mspower
-LIBS:opto
-LIBS:passives
-LIBS:power
-LIBS:relay
-LIBS:rf
-LIBS:simple
-LIBS:transistors
-LIBS:templates
+EESchema Schematic File Version 4
 LIBS:dvernik-cache
 EELAYER 26 0
 EELAYER END
@@ -33,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L ROE-0505S U403
+L power:ROE-0505S U403
 U 1 1 5917718B
 P 5300 1300
 F 0 "U403" H 5650 1750 60  0000 L CNN
@@ -44,7 +26,7 @@ F 3 "" H 5300 1300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R402
+L simple:R R402
 U 1 1 591771B1
 P 4150 2000
 F 0 "R402" V 4250 1900 50  0000 L CNN
@@ -55,7 +37,7 @@ F 3 "" H 4150 2000 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R406
+L simple:R R406
 U 1 1 591771B8
 P 6350 2100
 F 0 "R406" H 6420 2146 50  0000 L CNN
@@ -66,7 +48,7 @@ F 3 "" H 6350 2100 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R405
+L simple:R R405
 U 1 1 591771C6
 P 5900 2600
 F 0 "R405" V 5800 2600 50  0000 C CNN
@@ -77,7 +59,7 @@ F 3 "" H 5900 2600 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R404
+L simple:R R404
 U 1 1 591771CD
 P 4700 3250
 F 0 "R404" V 4600 3250 50  0000 C CNN
@@ -88,7 +70,7 @@ F 3 "" H 4700 3250 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR034
+L mspower:GND #PWR034
 U 1 1 591771F0
 P 5000 2400
 F 0 "#PWR034" H 5000 2150 50  0001 C CNN
@@ -99,7 +81,7 @@ F 3 "" H 5000 2400 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GNDA #PWR035
+L mspower:GNDA #PWR035
 U 1 1 5917720A
 P 5850 3250
 F 0 "#PWR035" H 5850 3000 50  0001 C CNN
@@ -110,7 +92,7 @@ F 3 "" H 5850 3250 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GNDA #PWR036
+L mspower:GNDA #PWR036
 U 1 1 5917721C
 P 5800 1550
 F 0 "#PWR036" H 5800 1300 50  0001 C CNN
@@ -127,7 +109,7 @@ CPU_RX
 Text Label 4400 3250 2    60   ~ 0
 CPU_TX
 $Comp
-L +5VA #PWR037
+L mspower:+5VA #PWR037
 U 1 1 5917722F
 P 6350 1100
 F 0 "#PWR037" H 6350 950 50  0001 C CNN
@@ -138,7 +120,7 @@ F 3 "" H 6350 1100 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C407
+L simple:C C407
 U 1 1 5917723B
 P 4650 1300
 F 0 "C407" H 4700 1400 50  0000 L CNN
@@ -149,7 +131,7 @@ F 3 "" H 4650 1300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C408
+L simple:C C408
 U 1 1 59177249
 P 5800 1300
 F 0 "C408" H 5850 1400 50  0000 L CNN
@@ -164,7 +146,7 @@ UNSAFE_RX
 Text Label 6500 3050 0    60   ~ 0
 UNSAFE_TX
 $Comp
-L HCPL-0601-500E U404
+L opto:HCPL-0601-500E U404
 U 1 1 5917725E
 P 5300 2250
 F 0 "U404" H 5600 2800 50  0000 C CNN
@@ -175,7 +157,7 @@ F 3 "" H 5300 2150 50  0000 L CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L HCPL-0601-500E U405
+L opto:HCPL-0601-500E U405
 U 1 1 59177265
 P 5300 3150
 F 0 "U405" H 5400 3700 50  0000 C CNN
@@ -289,7 +271,7 @@ Wire Wire Line
 	3900 1900 4900 1900
 Connection ~ 3900 1100
 $Comp
-L SN75176BDR U407
+L ic:SN75176BDR U407
 U 1 1 59177EF3
 P 8250 2800
 F 0 "U407" H 8300 3250 60  0000 L CNN
@@ -317,7 +299,7 @@ Connection ~ 7800 2900
 Wire Wire Line
 	6150 1100 6150 4650
 $Comp
-L C C409
+L simple:C C409
 U 1 1 5917845D
 P 6350 3450
 F 0 "C409" V 6098 3450 50  0000 C CNN
@@ -328,7 +310,7 @@ F 3 "" H 6350 3450 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GNDA #PWR038
+L mspower:GNDA #PWR038
 U 1 1 591784F4
 P 6500 3600
 F 0 "#PWR038" H 6500 3350 50  0001 C CNN
@@ -340,7 +322,7 @@ F 3 "" H 6500 3600 60  0000 C CNN
 $EndComp
 Connection ~ 6150 2900
 $Comp
-L C C411
+L simple:C C411
 U 1 1 5917860E
 P 8450 1800
 F 0 "C411" H 8335 1754 50  0000 R CNN
@@ -358,7 +340,7 @@ Wire Wire Line
 	8450 1400 8250 1400
 Connection ~ 8250 1400
 $Comp
-L GNDA #PWR039
+L mspower:GNDA #PWR039
 U 1 1 59178885
 P 8450 1950
 F 0 "#PWR039" H 8450 1700 50  0001 C CNN
@@ -371,7 +353,7 @@ $EndComp
 Wire Wire Line
 	5700 1500 6600 1500
 $Comp
-L GNDA #PWR040
+L mspower:GNDA #PWR040
 U 1 1 591789EC
 P 8250 3100
 F 0 "#PWR040" H 8250 2850 50  0001 C CNN
@@ -382,7 +364,7 @@ F 3 "" H 8250 3100 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Wago_233-502 P402
+L connectors:Wago_233-502 P402
 U 1 1 59178A7E
 P 9200 2800
 F 0 "P402" H 9278 2841 50  0000 L CNN
@@ -405,7 +387,7 @@ Wire Wire Line
 Wire Wire Line
 	8800 2900 8650 2900
 $Comp
-L Cosmo_1010-817 U406
+L opto:Cosmo_1010-817 U406
 U 1 1 59178DD0
 P 5300 4750
 F 0 "U406" H 5300 5075 50  0000 C CNN
@@ -418,7 +400,7 @@ $EndComp
 Wire Wire Line
 	7800 4850 5600 4850
 $Comp
-L C C410
+L simple:C C410
 U 1 1 59178F22
 P 6350 4350
 F 0 "C410" V 6098 4350 50  0000 C CNN
@@ -429,7 +411,7 @@ F 3 "" H 6350 4350 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GNDA #PWR041
+L mspower:GNDA #PWR041
 U 1 1 59179160
 P 6500 4450
 F 0 "#PWR041" H 6500 4200 50  0001 C CNN
@@ -452,7 +434,7 @@ Wire Wire Line
 	6150 4650 5600 4650
 Connection ~ 6150 4350
 $Comp
-L GNDA #PWR042
+L mspower:GNDA #PWR042
 U 1 1 591794D3
 P 7350 3600
 F 0 "#PWR042" H 7350 3350 50  0001 C CNN
@@ -463,7 +445,7 @@ F 3 "" H 7350 3600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R407
+L simple:R R407
 U 1 1 5917952C
 P 7550 3500
 F 0 "R407" V 7450 3500 50  0000 C CNN
@@ -481,7 +463,7 @@ Wire Wire Line
 	7700 3500 7800 3500
 Connection ~ 7800 3500
 $Comp
-L R R403
+L simple:R R403
 U 1 1 5917984B
 P 4750 4850
 F 0 "R403" V 4650 4850 50  0000 C CNN
@@ -504,7 +486,7 @@ LED on when log. 0\nLED off when log. 1
 Text Notes 9100 2600 0    60   ~ 0
 RS485
 $Comp
-L Wago_233-502 P403
+L connectors:Wago_233-502 P403
 U 1 1 5917A251
 P 10100 1150
 F 0 "P403" H 10178 1191 50  0000 L CNN
@@ -516,7 +498,7 @@ F 3 "" H 10100 1150 60  0000 C CNN
 $EndComp
 Connection ~ 8250 1100
 $Comp
-L GNDA #PWR043
+L mspower:GNDA #PWR043
 U 1 1 5917A355
 P 9000 1400
 F 0 "#PWR043" H 9000 1150 50  0001 C CNN
@@ -531,7 +513,7 @@ Wire Wire Line
 Wire Wire Line
 	9900 1200 9000 1200
 $Comp
-L FUSE F402
+L templates:FUSE F402
 U 1 1 5917A6EB
 P 9150 1100
 F 0 "F402" V 8943 1100 50  0000 C CNN
@@ -548,7 +530,7 @@ Wire Wire Line
 Wire Wire Line
 	1900 1100 3050 1100
 $Comp
-L R R401
+L simple:R R401
 U 1 1 591869D7
 P 3000 1400
 F 0 "R401" V 2900 1400 50  0000 C CNN
@@ -570,7 +552,7 @@ Wire Wire Line
 Wire Wire Line
 	3250 1900 2750 1900
 $Comp
-L IRLML6402 Q402
+L transistors:IRLML6402 Q402
 U 1 1 59186E57
 P 3250 1200
 F 0 "Q402" V 3578 1200 50  0000 C CNN
@@ -583,7 +565,7 @@ $EndComp
 Text HLabel 2750 1900 0    60   Input ~ 0
 ~READER_ON
 $Comp
-L R R410
+L simple:R R410
 U 1 1 5918D8C0
 P 5900 2350
 F 0 "R410" V 5800 2350 50  0000 C CNN
@@ -594,7 +576,7 @@ F 3 "" H 5900 2350 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R411
+L simple:R R411
 U 1 1 5918D906
 P 6750 2100
 F 0 "R411" H 6820 2146 50  0000 L CNN
@@ -621,7 +603,7 @@ Wire Wire Line
 Connection ~ 6100 2600
 Connection ~ 5650 2350
 $Comp
-L R R408
+L simple:R R408
 U 1 1 5918DF82
 P 4150 2200
 F 0 "R408" V 4250 2100 50  0000 L CNN
@@ -638,7 +620,7 @@ Wire Wire Line
 	4300 2200 4450 2200
 Connection ~ 4450 2200
 $Comp
-L R R409
+L simple:R R409
 U 1 1 5918E10D
 P 4700 3500
 F 0 "R409" V 4600 3500 50  0000 C CNN
@@ -661,7 +643,7 @@ Connection ~ 4450 3250
 Text Notes 9800 950  0    60   ~ 0
 Power for reader
 $Comp
-L Jamicon_220uF_25V C406
+L capacitors:Jamicon_220uF_25V C406
 U 1 1 59172B3A
 P 2300 1300
 F 0 "C406" H 2350 1400 50  0000 L CNN
@@ -672,7 +654,7 @@ F 3 "" H 2300 1300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jamicon_220uF_25V C301
+L capacitors:Jamicon_220uF_25V C301
 U 1 1 59180D99
 P 6600 1300
 F 0 "C301" H 6650 1400 50  0000 L CNN

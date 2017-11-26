@@ -1,22 +1,4 @@
-EESchema Schematic File Version 2
-LIBS:74xx
-LIBS:boards
-LIBS:buttons
-LIBS:capacitors
-LIBS:connectors
-LIBS:cpu
-LIBS:discrete
-LIBS:drivers
-LIBS:ic
-LIBS:mspower
-LIBS:opto
-LIBS:passives
-LIBS:power
-LIBS:relay
-LIBS:rf
-LIBS:simple
-LIBS:transistors
-LIBS:templates
+EESchema Schematic File Version 4
 LIBS:dvernik-cache
 EELAYER 26 0
 EELAYER END
@@ -33,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L JQX-14FC22CS8-5.0 U201
+L relay:JQX-14FC22CS8-5.0 U201
 U 1 1 58FE8C56
 P 5700 3300
 AR Path="/58FE8759/58FE8C56" Ref="U201"  Part="1" 
@@ -46,7 +28,7 @@ F 3 "" H 5700 3350 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L 2N7002K Q201
+L transistors:2N7002K Q201
 U 1 1 58FE8C63
 P 5300 4100
 AR Path="/58FE8759/58FE8C63" Ref="Q201"  Part="1" 
@@ -59,7 +41,7 @@ F 3 "" H 5300 4100 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L SK110 D201
+L simple:SK110 D201
 U 1 1 58FE8C6A
 P 4900 3300
 AR Path="/58FE8759/58FE8C6A" Ref="D201"  Part="1" 
@@ -72,7 +54,7 @@ F 3 "" H 4900 3300 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L R R201
+L simple:R R201
 U 1 1 58FE8C83
 P 4650 4300
 AR Path="/58FE8759/58FE8C83" Ref="R201"  Part="1" 
@@ -87,7 +69,7 @@ $EndComp
 Text Notes 3150 5200 0    60   ~ 0
 TODO - is the mosfet strong enough?\n24mA at Vgs = 3.3V; Vds = 5V within specs\n(Rdson cca 5 ohm)
 $Comp
-L Jamicon_220uF_16V_TKP C201
+L capacitors:Jamicon_220uF_16V_TKP C201
 U 1 1 58FE8C97
 P 4350 3000
 AR Path="/58FE8759/58FE8C97" Ref="C201"  Part="1" 
@@ -102,7 +84,7 @@ $EndComp
 Text HLabel 4150 4100 0    60   Input ~ 0
 OPEN
 $Comp
-L CONN_01X02 P201
+L connectors:CONN_01X02 P201
 U 1 1 58FE8E7A
 P 6350 2300
 AR Path="/58FE8759/58FE8E7A" Ref="P201"  Part="1" 
@@ -137,7 +119,7 @@ Connect the buzzer side of cut buzzer wires here\n(connect to COM+NO or COM+NC d
 Text Notes 2950 4000 0    60   ~ 0
 Log. high triggers the relay\nand opens the door
 $Comp
-L CONN_01X03 P202
+L connectors:CONN_01X03 P202
 U 1 1 58FEE200
 P 8600 4200
 AR Path="/58FE8759/58FEE200" Ref="P202"  Part="1" 
@@ -154,7 +136,7 @@ BUZZER_NC
 Text Notes 5800 5750 0    60   ~ 0
 The replacement buzzer power,\npolarity normally does not matter
 $Comp
-L SD103A D205
+L simple:SD103A D205
 U 1 1 5916DE27
 P 8000 2600
 F 0 "D205" V 7954 2679 50  0000 L CNN
@@ -165,7 +147,7 @@ F 3 "" H 8000 2600 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L SD103A D202
+L simple:SD103A D202
 U 1 1 5916DE99
 P 7500 1950
 F 0 "D202" V 7546 2029 50  0000 L CNN
@@ -176,7 +158,7 @@ F 3 "" H 7500 1950 60  0000 C CNN
 	0    1    -1   0   
 $EndComp
 $Comp
-L SD103A D204
+L simple:SD103A D204
 U 1 1 5916DEC5
 P 8000 1950
 F 0 "D204" V 7954 2029 50  0000 L CNN
@@ -187,7 +169,7 @@ F 3 "" H 8000 1950 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L SD103A D203
+L simple:SD103A D203
 U 1 1 5916DEF3
 P 7500 2600
 F 0 "D203" V 7546 2521 50  0000 R CNN
@@ -198,7 +180,7 @@ F 3 "" H 7500 2600 60  0000 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Cosmo_1010-817 U202
+L opto:Cosmo_1010-817 U202
 U 1 1 5916DFF3
 P 9800 3100
 F 0 "U202" H 9800 3425 50  0000 C CNN
@@ -209,7 +191,7 @@ F 3 "" H 9800 3000 50  0000 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R202
+L simple:R R202
 U 1 1 5916E13C
 P 9250 3200
 F 0 "R202" V 9150 3200 50  0000 C CNN
@@ -320,7 +302,7 @@ Connection ~ 4350 4700
 Wire Wire Line
 	4150 2550 5400 2550
 $Comp
-L FUSE F201
+L templates:FUSE F201
 U 1 1 591740C4
 P 7050 5050
 F 0 "F201" H 7120 5096 50  0000 L CNN

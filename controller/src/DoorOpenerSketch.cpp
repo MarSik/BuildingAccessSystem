@@ -93,13 +93,17 @@
 // DCF77 receiver
 #define DCF77_PIN 11
 
+// TX EN pin
+// pin for RS485 direction control
+#define TXEN_PIN 2
+
 // ######################################################################################
 
 #include <Arduino.h>
-#include <cstdlib>
-#include <algorithm>
+#undef min
+#undef max
+
 #include "SPI.h"
-#include "EEPROM.h"
 #include "DCF77.h"
 #include "Time.h"
 #include "MFRC522Ultralight.h"
@@ -110,7 +114,7 @@
 
 DCF77 DCF = DCF77(DCF77_PIN, DCF77_PIN);
 
-MFRC522IntfSpiOver485 mfrcIntf(Serial1);
+MFRC522IntfSpiOver485 mfrcIntf(Serial1, TXEN_PIN);
 MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
 CardManager<MFRC522IntfSpiOver485> cardManager(mfrc522);
 
@@ -139,19 +143,19 @@ void SetLED(eLED e_LED)
     Utils::WritePin(LED_GREEN_PIN, LOW);
     Utils::WritePin(LED_BUILTIN,   LOW);
 
-    mfrcIntf.led(1, true);
-    mfrcIntf.led(2, true);
+    //mfrcIntf.led(1, true);
+    //mfrcIntf.led(2, true);
 
     switch (e_LED)
     {
         case LED_RED:
             Utils::WritePin(LED_RED_PIN, HIGH);
-            mfrcIntf.led(1, true);
+            //mfrcIntf.led(1, true);
             //Utils::WritePin(LED_BUILTIN, HIGH); // LED on Teensy
             break;
         case LED_GREEN:
             Utils::WritePin(LED_GREEN_PIN, HIGH);
-            mfrcIntf.led(2, true);
+            //mfrcIntf.led(2, true);
             //Utils::WritePin(LED_BUILTIN,   HIGH); // LED on Teensy
             break;
         default:  // Just to avoid stupid gcc compiler warning
@@ -411,7 +415,7 @@ void AddCardToEeprom()
     // First the entire memory of s8_Name is filled with random data.
     // Then the username + terminating zero is written over it.
     // The result is for example: s8_Name[NAME_BUF_SIZE] = { 'P', 'e', 't', 'e', 'r', 0, 0xDE, 0x45, 0x70, 0x5A, 0xF9, 0x11, 0xAB }
-    // The string operations like stricmp() will only read up to the terminating zero,
+    // The string operations like strcasecmp() will only read up to the terminating zero,
     // but the application master key is derived from user name + random data.
     // Utils::GenerateRandom((byte*)k_User.s8_Name, NAME_BUF_SIZE);
     // strcpy(k_User.s8_Name, s8_UserName);
@@ -518,7 +522,7 @@ void OnCommandReceived(bool b_PasswordValid)
     gu64_LastPasswd = Utils::GetMillis64() + PASSWORD_OFFSET_MS;
 
     // This command must work even if gb_InitSuccess == false
-    if (strnicmp(gs8_CommandBuffer, "DEBUG", 5) == 0)
+    if (strncasecmp(gs8_CommandBuffer, "DEBUG", 5) == 0)
     {
         if (!ParseParameter(gs8_CommandBuffer + 5, &s8_Parameter, 1, 1))
             return;
@@ -542,7 +546,7 @@ void OnCommandReceived(bool b_PasswordValid)
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (stricmp(gs8_CommandBuffer, "RESET") == 0)
+    if (strcasecmp(gs8_CommandBuffer, "RESET") == 0)
     {
         InitReader(false);
         if (gb_InitSuccess)
@@ -553,7 +557,7 @@ void OnCommandReceived(bool b_PasswordValid)
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (stricmp(gs8_CommandBuffer, "TESTAUTH") == 0)
+    if (strcasecmp(gs8_CommandBuffer, "TESTAUTH") == 0)
     {
         uint64_t cardId;
         Utils::Print("Waiting for card...", LF);
@@ -568,7 +572,7 @@ void OnCommandReceived(bool b_PasswordValid)
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (PASSWORD[0] != 0 && stricmp(gs8_CommandBuffer, "EXIT") == 0)
+    if (PASSWORD[0] != 0 && strcasecmp(gs8_CommandBuffer, "EXIT") == 0)
     {
         gu64_LastPasswd = 0;
         Utils::Print("You have logged out.\r\n");
@@ -577,13 +581,13 @@ void OnCommandReceived(bool b_PasswordValid)
 
     if (gb_InitSuccess)
     {
-        if (stricmp(gs8_CommandBuffer, "CLEAR") == 0)
+        if (strcasecmp(gs8_CommandBuffer, "CLEAR") == 0)
         {
             ClearEeprom();
             return;
         }
 
-        if (strnicmp(gs8_CommandBuffer, "KEY", 3) == 0)
+        if (strncasecmp(gs8_CommandBuffer, "KEY", 3) == 0)
         {
           if (!ParseParameter(gs8_CommandBuffer + 3, &s8_Parameter, 32, 32))
               return;
@@ -592,13 +596,13 @@ void OnCommandReceived(bool b_PasswordValid)
           return;
         }
 
-        if (stricmp(gs8_CommandBuffer, "LIST") == 0)
+        if (strcasecmp(gs8_CommandBuffer, "LIST") == 0)
         {
             // TODO list black and whitelists
             return;
         }
 
-        if (stricmp(gs8_CommandBuffer, "RESTORE") == 0)
+        if (strcasecmp(gs8_CommandBuffer, "RESTORE") == 0)
         {
             if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
             else                          Utils::Print("Restore failed\r\n");
@@ -606,7 +610,7 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-        if (stricmp(gs8_CommandBuffer, "MAKERANDOM") == 0)
+        if (strcasecmp(gs8_CommandBuffer, "MAKERANDOM") == 0)
         {
                 /*if (MakeRandomCard()) Utils::Print("MakeRandom success\r\n");
                 else                  Utils::Print("MakeRandom failed\r\n");*/
@@ -614,7 +618,7 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
-        if (strnicmp(gs8_CommandBuffer, "ADD", 3) == 0)
+        if (strncasecmp(gs8_CommandBuffer, "ADD", 3) == 0)
         {
             AddCardToEeprom();
 

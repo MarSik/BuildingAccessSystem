@@ -1182,8 +1182,8 @@ F 3 "" H 3800 3750 30  0000 C CNN
 	1    3800 3750
 	1    0    0    -1  
 $EndComp
-Text Notes 3400 5400 0    60   ~ 0
-!!! Errata:\nVersion 1 has switched MISO\nand TAMPER pins like this:\nMISO - PTB1\nTAMPER - PTB4\n 
+Text Notes 1350 5000 0    60   ~ 0
+!!! Errata:\nVersion 1 has effectively switched MISO\nand TAMPER pins on the connectors side.\nMISO - can be accessed using the tamper\n        conn header (P104)\nTAMPER - can be accessed\n           on P105 p5\n 
 Text Notes 2300 3050 0    60   ~ 0
 !!! Errata:\nR113 is necessary, but missing from\nversion 1 of the project
 Wire Notes Line

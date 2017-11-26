@@ -1,22 +1,4 @@
-EESchema Schematic File Version 2
-LIBS:74xx
-LIBS:boards
-LIBS:buttons
-LIBS:capacitors
-LIBS:connectors
-LIBS:cpu
-LIBS:discrete
-LIBS:drivers
-LIBS:ic
-LIBS:mspower
-LIBS:opto
-LIBS:passives
-LIBS:power
-LIBS:relay
-LIBS:rf
-LIBS:simple
-LIBS:transistors
-LIBS:templates
+EESchema Schematic File Version 4
 LIBS:dvernik-cache
 EELAYER 26 0
 EELAYER END
@@ -33,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Mini-360 U401
+L power:Mini-360 U401
 U 1 1 590E228F
 P 5000 1600
 F 0 "U401" H 5000 2087 60  0000 C CNN
@@ -44,7 +26,7 @@ F 3 "" H 5000 1600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C404
+L simple:C C404
 U 1 1 590E22AE
 P 6300 1600
 F 0 "C404" H 6415 1646 50  0000 L CNN
@@ -55,7 +37,7 @@ F 3 "" H 6300 1600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L FUSE F401
+L templates:FUSE F401
 U 1 1 590E22B5
 P 1800 2050
 F 0 "F401" V 1500 2050 50  0000 C CNN
@@ -66,7 +48,7 @@ F 3 "" H 1800 2050 30  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L IRFU9024 Q401
+L transistors:IRFU9024 Q401
 U 1 1 590E22BC
 P 2650 2150
 F 0 "Q401" V 3050 2150 50  0000 C CNN
@@ -77,7 +59,7 @@ F 3 "" H 2650 2150 60  0000 C CNN
 	0    1    -1   0   
 $EndComp
 $Comp
-L CONN_01X02 P401
+L connectors:CONN_01X02 P401
 U 1 1 590E22C3
 P 1100 2250
 F 0 "P401" H 1250 1950 50  0000 R CNN
@@ -90,7 +72,7 @@ $EndComp
 Text Notes 1050 2700 0    60   ~ 0
 Main power input - cca 13.8V\npolarity and overvoltage protected
 $Comp
-L Jamicon_220uF_16V_TKP C402
+L capacitors:Jamicon_220uF_16V_TKP C402
 U 1 1 590E22CB
 P 5650 1600
 F 0 "C402" H 5765 1646 50  0000 L CNN
@@ -101,7 +83,7 @@ F 3 "" H 5650 1600 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C405
+L simple:C C405
 U 1 1 590E2568
 P 6300 2800
 F 0 "C405" H 6415 2846 50  0000 L CNN
@@ -122,7 +104,7 @@ Text Notes 4950 1650 0    60   ~ 0
 Text Notes 4950 2850 0    60   ~ 0
 12V
 $Comp
-L BZX85C15 D401
+L discrete:BZX85C15 D401
 U 1 1 590E6F05
 P 2050 2250
 F 0 "D401" V 2004 2329 50  0000 L CNN
@@ -133,7 +115,7 @@ F 3 "" H 2050 2250 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Jamicon_220uF_16V_TKP C403
+L capacitors:Jamicon_220uF_16V_TKP C403
 U 1 1 590E256E
 P 5650 2800
 F 0 "C403" H 5765 2846 50  0000 L CNN
@@ -148,7 +130,7 @@ PIN
 Text Label 2050 2050 0    60   ~ 0
 PFUSED
 $Comp
-L Mini-360 U402
+L power:Mini-360 U402
 U 1 1 5922A582
 P 5000 2800
 F 0 "U402" H 5000 3287 60  0000 C CNN
@@ -159,7 +141,7 @@ F 3 "" H 5000 2800 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jamicon_220uF_25V C401
+L capacitors:Jamicon_220uF_25V C401
 U 1 1 5922BD9A
 P 3250 2300
 F 0 "C401" H 3365 2346 50  0000 L CNN
@@ -170,7 +152,7 @@ F 3 "" H 3250 2300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C412
+L simple:C C412
 U 1 1 5922BEB6
 P 3600 2750
 F 0 "C412" H 3715 2796 50  0000 L CNN
@@ -280,7 +262,7 @@ Wire Wire Line
 	3600 2900 3600 3450
 Connection ~ 3600 3450
 $Comp
-L TL431ACD U408
+L simple:TL431ACD U408
 U 1 1 5925D1B0
 P 8700 2250
 F 0 "U408" H 9088 2303 60  0000 L CNN
@@ -291,7 +273,7 @@ F 3 "" H 9550 2100 60  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R412
+L simple:R R412
 U 1 1 5925D21E
 P 8000 1950
 F 0 "R412" H 8070 1996 50  0000 L CNN
@@ -302,7 +284,7 @@ F 3 "" H 8000 1950 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R413
+L simple:R R413
 U 1 1 5925D25E
 P 8000 2350
 F 0 "R413" H 8070 2396 50  0000 L CNN
@@ -313,7 +295,7 @@ F 3 "" H 8000 2350 30  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R414
+L simple:R R414
 U 1 1 5925D32B
 P 8900 1600
 F 0 "R414" H 8970 1646 50  0000 L CNN
@@ -366,7 +348,7 @@ Connection ~ 8550 1350
 Text Notes 7900 1100 0    60   ~ 0
 Overvoltage crowbar protection
 $Comp
-L C C413
+L simple:C C413
 U 1 1 5925DDF5
 P 9350 2600
 F 0 "C413" H 9465 2646 50  0000 L CNN

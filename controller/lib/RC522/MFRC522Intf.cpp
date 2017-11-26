@@ -253,6 +253,8 @@ void
 MFRC522IntfSpiOver485::init()
 const
 {
+  rx();
+
   _serial.setBufferSize(128, 128);
   _serial.begin(115200);
 }
@@ -261,11 +263,13 @@ void
 MFRC522IntfSpiOver485::begin()
 const
 {
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x02); // Clear CS
   writeByte(0x01);
   _serial.write(END_FRAME);
   flush();
+  rx();
   dropFrame();
 }
 
@@ -273,11 +277,13 @@ void
 MFRC522IntfSpiOver485::end()
 const
 {
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x01); // Set CS
   writeByte(0x01);
   _serial.write(END_FRAME);
   flush();
+  rx();
   dropFrame();
 }
 
@@ -285,11 +291,13 @@ void
 MFRC522IntfSpiOver485::led(uint8_t no, bool value)
 const
 {
+  tx();
   _serial.write(START_FRAME);
   writeByte(value ? 0x01 : 0x02); // Set / Clear
   writeByte(1 << no);
   _serial.write(END_FRAME);
   flush();
+  rx();
   dropFrame();
 }
 
@@ -303,12 +311,14 @@ MFRC522IntfSpiOver485::PCD_WriteRegister(PCD_Register reg,	///< The register to 
 ) const
 {
   begin();
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x00);
   writeByte(reg << 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
   writeByte(value);
   _serial.write(END_FRAME);
   flush();
+  rx();
   dropFrame();
   end();
   return true;
@@ -324,7 +334,8 @@ MFRC522IntfSpiOver485::PCD_WriteRegister(PCD_Register reg,	///< The register to 
                                   byte const * const values	///< The values to write. Byte array.
 ) const
 {
-  begin();			// Select slave
+  begin();  // Select slave
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x00);
   writeByte(reg << 1);	// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
@@ -333,6 +344,7 @@ MFRC522IntfSpiOver485::PCD_WriteRegister(PCD_Register reg,	///< The register to 
   }
   _serial.write(END_FRAME);
   flush();
+  rx();
   dropFrame();
   end(); // Release slave again
   return true;
@@ -347,17 +359,20 @@ int MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg	///< The register t
 {
   byte value;
   begin();			// Select slave
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x00);
   writeByte(0x80 | (reg << 1));	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   writeByte(0);	// Read the value back. Send 0 to stop reading.
   _serial.write(END_FRAME);
+  flush();
+  rx();
 
   waitFrame();
   readByte(); // drop status
   readByte(); // drop first byte
   value = readByte();
-  readByte(); // drop END_FRAME
+  dropFrameData();
 
   end();			// Release slave again
   return value;
@@ -380,6 +395,7 @@ MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg,	///< The register to r
   //MFRC522Logger.print(F("Reading "));  MFRC522Logger.print(count); MFRC522Logger.println(F(" bytes from register."));
   byte address = 0x80 | (reg << 1);	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   begin();			// Select slave
+  tx();
   _serial.write(START_FRAME);
   writeByte(0x00); // SPI
   for (uint8_t idx = 0; idx < count; idx++) {
@@ -388,6 +404,7 @@ MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg,	///< The register to r
   writeByte(0);
   _serial.write(END_FRAME);
   flush();
+  rx();
 
   waitFrame();
   readByte(); // drop status byte
@@ -407,6 +424,7 @@ MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg,	///< The register to r
     values[index] = readByte();	// Read response
     index++;
   }
+  dropFrameData();
   end();			// Release slave again
   return true;
 }				// End PCD_ReadRegister()

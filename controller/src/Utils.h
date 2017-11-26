@@ -16,6 +16,8 @@
 // ********************************************************************************/
 
 #include <Arduino.h>
+#undef min
+#undef max
 
 #if USE_HARDWARE_SPI
     #include <SPI.h>  // Hardware SPI bus

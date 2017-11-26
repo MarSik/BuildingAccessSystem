@@ -55,6 +55,8 @@ volatile Buffer_t RxBuffer;
 static volatile uint8_t spiSent = 0;
 static volatile uint8_t spiReceived = 0;
 
+static const uint8_t TX_RX_DELAY = 50;
+
 static const uint8_t FRAME_MARKER_START = '{';
 static const uint8_t FRAME_MARKER_ESC = '\\';
 static const uint8_t FRAME_MARKER_ESC_XOR = 0x20;
@@ -198,7 +200,7 @@ int main(void) {
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = 2;
+                _delayedSend = TX_RX_DELAY;
                 continue;
             }
 
@@ -223,7 +225,7 @@ int main(void) {
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = 2;
+                _delayedSend = TX_RX_DELAY;
                 continue;
             }
 
@@ -254,7 +256,7 @@ int main(void) {
                 serialQueue('O');
                 serialQueue('K');
                 serialQueueEnd();
-                _delayedSend = 2;
+                _delayedSend = TX_RX_DELAY;
                 continue;
             }
 
@@ -262,7 +264,7 @@ int main(void) {
             serialQueue(0xff); // error marker
             serialQueueBuffer(&RxBuffer);
             serialQueueEnd();
-            _delayedSend = 2;
+            _delayedSend = TX_RX_DELAY;
         }
 
         __WFI();
@@ -278,7 +280,7 @@ void SPI0_IRQHandler(void) {
         if (spiReceived == spiSent) {
             // Last byte processed, trigger uart
             serialQueueEnd();
-            _delayedSend = 2;
+            _delayedSend = TX_RX_DELAY;
         }
     }
 
