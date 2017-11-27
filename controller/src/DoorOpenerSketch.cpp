@@ -41,6 +41,7 @@
 #define MEM_WP 27 // WP log.0
 
 // Reader
+// TODO Make sure the TX pin can provide at least 8mA
 #define READER_SERIAL 1
 #define READER_TX 2 // TX active log.0
 #define READER_ON 5 // ON log.0

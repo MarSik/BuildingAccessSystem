@@ -6,8 +6,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 4
 Title ""
-Date ""
-Rev ""
+Date "2017-11-28"
+Rev "1.2"
 Comp ""
 Comment1 ""
 Comment2 ""
@@ -365,6 +365,7 @@ F4 "~CPU_TX_EN" I L 8050 1900 60
 F5 "GND" U L 8050 2100 60 
 F6 "+5V" U L 8050 1050 60 
 F7 "~READER_ON" I L 8050 1200 60 
+F8 "+3.3V" U L 8050 1450 60 
 $EndSheet
 $Comp
 L mspower:GND #PWR015
@@ -1147,4 +1148,19 @@ Wire Notes Line
 	1000 5300 1000 3700
 Wire Notes Line
 	1000 3700 1050 3700
+Wire Wire Line
+	8050 1450 7250 1450
+Wire Wire Line
+	7250 1450 7250 1250
+$Comp
+L mspower:+3V3 #PWR044
+U 1 1 5A2C4F8D
+P 7250 1250
+F 0 "#PWR044" H 7250 1100 50  0001 C CNN
+F 1 "+3V3" H 7265 1423 50  0000 C CNN
+F 2 "" H 7250 1250 60  0000 C CNN
+F 3 "" H 7250 1250 60  0000 C CNN
+	1    7250 1250
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
