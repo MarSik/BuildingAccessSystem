@@ -2,4 +2,3 @@
 .piolibdeps
 Toolchain-*
 build-*
-CMakeLists.txt

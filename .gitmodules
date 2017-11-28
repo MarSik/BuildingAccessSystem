@@ -1,0 +1,15 @@
+[submodule "controller/lib/DCF77"]
+	path = controller/lib/DCF77
+	url = https://github.com/thijse/Arduino-DCF77.git
+[submodule "controller/lib/etl"]
+	path = controller/lib/etl
+	url = https://github.com/ETLCPP/etl
+[submodule "controller/lib/Time"]
+	path = controller/lib/Time
+	url = https://github.com/PaulStoffregen/Time
+[submodule "controller/lib/Timezone"]
+	path = controller/lib/Timezone
+	url = https://github.com/JChristensen/Timezone.git
+[submodule "controller/lib/SD"]
+	path = controller/lib/SD
+	url = https://github.com/rei-vilo/SD_TM4C.git
