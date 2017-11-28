@@ -1,0 +1,22 @@
+# Example cmake project file used with EFM32 Wonder Gecko toolchain (efm32wg)
+cmake_minimum_required(VERSION 2.8)
+PROJECT(project)
+
+FIND_PACKAGE(CMSIS 4.3.0 EXACT REQUIRED)
+
+# Set used CPU 
+SET(CPU KE04Z8)
+SET(F_CPU 48000000)
+
+# Target name must match project name !!
+ADD_EXECUTABLE(${PROJECT_NAME} src/main.cpp)
+SET_PROPERTY(TARGET ${PROJECT_NAME} APPEND PROPERTY INCLUDE_DIRECTORIES ${CMSIS_INCLUDE_DIRS})
+
+ADD_LIBRARY(_cmsis STATIC ${CMSIS_SOURCES})
+SET_PROPERTY(TARGET _cmsis APPEND PROPERTY INCLUDE_DIRECTORIES ${CMSIS_INCLUDE_DIRS})
+
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} _cmsis)
+
+# Project specific toolchain initialization
+INCLUDE(${TOOLCHAIN_INIT})
+
