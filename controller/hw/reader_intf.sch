@@ -107,7 +107,7 @@ fully isolated to protect safe\nzone from unsafe zone
 Text Label 4400 2500 2    60   ~ 0
 CPU_RX
 Text Label 4400 3250 2    60   ~ 0
-CPU_TX
+CPU_TX5
 $Comp
 L mspower:+5VA #PWR037
 U 1 1 5917722F
@@ -167,7 +167,7 @@ F 3 "" H 5300 3050 50  0000 L CNN
 	1    5300 3150
 	1    0    0    -1  
 $EndComp
-Text HLabel 3600 3250 0    60   Input ~ 0
+Text HLabel 3150 3250 0    60   Input ~ 0
 CPU_TX
 Text HLabel 3600 2500 0    60   Output ~ 0
 CPU_RX
@@ -712,4 +712,27 @@ F 3 "" H 4650 1300 60  0000 C CNN
 	1    4650 1300
 	-1   0    0    -1  
 $EndComp
+$Comp
+L simple:TS4148RXG D302
+U 1 1 5A34F7A3
+P 3450 3250
+F 0 "D302" H 3450 3465 50  0000 C CNN
+F 1 "TS4148RXG" H 3450 3374 50  0000 C CNN
+F 2 "smd-handsolder:Diode_1206_HandSoldering" H 3450 3250 60  0001 C CNN
+F 3 "" H 3450 3250 60  0000 C CNN
+	1    3450 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3150 3250 3300 3250
+Text Notes 1500 2950 0    60   ~ 0
+Place D301 or D302, not both.\nShort the unused pads.
+Wire Notes Line
+	3000 2900 3450 2900
+Wire Notes Line
+	3450 2900 3450 2950
+Wire Notes Line
+	3000 2850 4250 2850
+Wire Notes Line
+	4250 2850 4250 1800
 $EndSCHEMATC
