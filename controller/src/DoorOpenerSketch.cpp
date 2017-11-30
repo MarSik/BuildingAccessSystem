@@ -770,10 +770,6 @@ void loop()
         setTime(DCFtime);
     }
 
-    Serial.print("DCF buff ");
-    Serial.println(DCF.bufferPosition);
-    //Utils::PrintHex64(DCF.runningBuffer, LF);
-
     static uint64_t u64_LastRead = 0;
     if (gb_InitSuccess)
     {
