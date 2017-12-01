@@ -106,8 +106,6 @@ Text Notes 6600 1000 0    60   ~ 0
 fully isolated to protect safe\nzone from unsafe zone
 Text Label 4400 2500 2    60   ~ 0
 CPU_RX
-Text Label 4400 3250 2    60   ~ 0
-CPU_TX5
 $Comp
 L mspower:+5VA #PWR037
 U 1 1 5917722F
@@ -167,11 +165,11 @@ F 3 "" H 5300 3050 50  0000 L CNN
 	1    5300 3150
 	1    0    0    -1  
 $EndComp
-Text HLabel 3150 3250 0    60   Input ~ 0
+Text HLabel 1900 3250 0    60   Input ~ 0
 CPU_TX
-Text HLabel 3600 2500 0    60   Output ~ 0
+Text HLabel 1900 2500 0    60   Output ~ 0
 CPU_RX
-Text HLabel 3650 4850 0    60   Input ~ 0
+Text HLabel 3150 4850 0    60   Input ~ 0
 ~CPU_TX_EN
 Text HLabel 1900 1500 0    60   UnSpc ~ 0
 GND
@@ -445,18 +443,33 @@ Text Label 8700 2700 0    60   ~ 0
 Text Label 8700 2900 0    60   ~ 0
 485B
 Text Notes 550  6400 0    60   ~ 0
-Errata V1.0, V1.1:\nCPU_RX and CPU_TX are not 5V tolerant on the CPU side\n- Pull-ups on CPU_RX must be removed\n   and week pull-ups enabled on CPU pin in software\n- CPU_TX is barely compliant thanks to forward diode\n   voltage of the optos (cca 1.5V)\n- D301 is another part of the workaround,\n   use D with Vf=0.5V @ 50mA\n\nV1.2:\n- D301 incorporated into the design, TX should be compliant\n- RX has proper 3.3V pull-ups
+Errata V1.0, V1.1:\nCPU_RX and CPU_TX are not 5V tolerant on the CPU side\n- Pull-ups on CPU_RX must be removed\n   and week pull-ups enabled on CPU pin in software\n- CPU_TX is barely compliant thanks to forward diode\n   voltage of the optos (cca 1.5V)\n\nV1.2:\n- RX has proper 3.3V pull-ups\n- TX needs work
+Text HLabel 1900 2100 0    60   UnSpc ~ 0
++3.3V
 $Comp
-L simple:D D301
-U 1 1 5A254773
-P 3900 1700
-F 0 "D301" V 3946 1622 50  0000 R CNN
-F 1 "BAT43" V 3855 1622 50  0000 R CNN
-F 2 "smd-handsolder:Diode_1206_HandSoldering" H 3900 1700 60  0001 C CNN
-F 3 "" H 3900 1700 60  0000 C CNN
-	1    3900 1700
-	0    -1   -1   0   
+L transistors:IRLML6402 Q402
+U 1 1 59186E57
+P 3250 1200
+F 0 "Q402" V 3578 1200 50  0000 C CNN
+F 1 "IRLML6402" V 3487 1200 50  0000 C CNN
+F 2 "smd-handsolder:SOT-23_HandSoldering" H 3450 1300 29  0001 C CNN
+F 3 "" H 3250 1200 60  0000 C CNN
+	1    3250 1200
+	0    1    -1   0   
 $EndComp
+$Comp
+L simple:C C302
+U 1 1 5A323405
+P 4650 1300
+F 0 "C302" H 4700 1400 50  0000 L CNN
+F 1 "100n" H 4700 1200 50  0000 L CNN
+F 2 "smd-handsolder:C_1206_HandSoldering" H 4688 1150 30  0001 C CNN
+F 3 "" H 4650 1300 60  0000 C CNN
+	1    4650 1300
+	-1   0    0    -1  
+$EndComp
+Text Label 4400 3250 2    60   ~ 0
+CPU_TX5
 Wire Wire Line
 	6350 2250 6350 3050
 Wire Wire Line
@@ -467,7 +480,7 @@ Connection ~ 6350 1100
 Wire Wire Line
 	3450 1100 4900 1100
 Wire Wire Line
-	3600 2500 4750 2500
+	1900 2500 4750 2500
 Wire Wire Line
 	5600 2150 6150 2150
 Connection ~ 6150 1100
@@ -611,8 +624,6 @@ Wire Wire Line
 	3900 4650 5000 4650
 Connection ~ 3900 3050
 Wire Wire Line
-	3650 4850 4600 4850
-Wire Wire Line
 	4900 4850 5000 4850
 Connection ~ 8250 1100
 Wire Wire Line
@@ -664,22 +675,7 @@ Connection ~ 6600 1100
 Wire Wire Line
 	6600 1500 6600 1450
 Wire Wire Line
-	3900 1100 3900 1550
-Wire Wire Line
-	3900 1850 3900 4650
-Text HLabel 1900 2100 0    60   UnSpc ~ 0
-+3.3V
-$Comp
-L transistors:IRLML6402 Q402
-U 1 1 59186E57
-P 3250 1200
-F 0 "Q402" V 3578 1200 50  0000 C CNN
-F 1 "IRLML6402" V 3487 1200 50  0000 C CNN
-F 2 "smd-handsolder:SOT-23_HandSoldering" H 3450 1300 29  0001 C CNN
-F 3 "" H 3250 1200 60  0000 C CNN
-	1    3250 1200
-	0    1    -1   0   
-$EndComp
+	3900 1100 3900 4650
 Wire Wire Line
 	2750 2000 2750 2200
 Wire Wire Line
@@ -696,43 +692,44 @@ Connection ~ 3250 1700
 Wire Wire Line
 	2750 2200 3300 2200
 Connection ~ 2750 2100
-Text Label 3900 2150 0    60   ~ 0
-DC4.5V
 Wire Wire Line
 	4650 1850 4650 1900
 Connection ~ 4650 1900
+Wire Wire Line
+	3150 4850 4600 4850
 $Comp
-L simple:C C302
-U 1 1 5A323405
-P 4650 1300
-F 0 "C302" H 4700 1400 50  0000 L CNN
-F 1 "100n" H 4700 1200 50  0000 L CNN
-F 2 "smd-handsolder:C_1206_HandSoldering" H 4688 1150 30  0001 C CNN
-F 3 "" H 4650 1300 60  0000 C CNN
-	1    4650 1300
-	-1   0    0    -1  
-$EndComp
-$Comp
-L simple:TS4148RXG D302
-U 1 1 5A34F7A3
-P 3450 3250
-F 0 "D302" H 3450 3465 50  0000 C CNN
-F 1 "TS4148RXG" H 3450 3374 50  0000 C CNN
-F 2 "smd-handsolder:Diode_1206_HandSoldering" H 3450 3250 60  0001 C CNN
-F 3 "" H 3450 3250 60  0000 C CNN
-	1    3450 3250
+L simple:R R301
+U 1 1 5A4AC702
+P 2000 3000
+F 0 "R301" H 2070 3046 50  0000 L CNN
+F 1 "10k" H 2070 2955 50  0000 L CNN
+F 2 "smd-handsolder:R_1206_HandSoldering" V 1930 3000 30  0001 C CNN
+F 3 "" H 2000 3000 30  0000 C CNN
+	1    2000 3000
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3150 3250 3300 3250
-Text Notes 1500 2950 0    60   ~ 0
-Place D301 or D302, not both.\nShort the unused pads.
-Wire Notes Line
-	3000 2900 3450 2900
-Wire Notes Line
-	3450 2900 3450 2950
-Wire Notes Line
-	3000 2850 4250 2850
-Wire Notes Line
-	4250 2850 4250 1800
+	2000 3150 2000 3250
+Connection ~ 2000 3250
+Wire Wire Line
+	2000 2850 2000 2100
+Connection ~ 2000 2100
+$Comp
+L transistors:IRLML0030TRPBF Q301
+U 1 1 5A4B7B06
+P 3400 3150
+F 0 "Q301" V 3636 3150 50  0000 C CNN
+F 1 "IRLML0030TRPBF" V 3727 3150 50  0000 C CNN
+F 2 "smd-handsolder:SOT-23_HandSoldering" H 3600 3250 29  0001 C CNN
+F 3 "" H 3400 3150 60  0000 C CNN
+	1    3400 3150
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1900 3250 3200 3250
+Wire Wire Line
+	3400 2950 3400 2750
+Wire Wire Line
+	3400 2750 2000 2750
+Connection ~ 2000 2750
 $EndSCHEMATC
