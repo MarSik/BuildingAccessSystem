@@ -89,12 +89,10 @@ private:
     const int END_FRAME = '}';
 
     void tx(void) const {
-      pinMode(_txEn, OUTPUT);
       digitalWrite(_txEn, LOW);
     }
 
     void rx(void) const {
-      pinMode(_txEn, INPUT);
       digitalWrite(_txEn, HIGH);
     }
 

@@ -738,6 +738,21 @@ void setup()
     Utils::SetPinMode(BT_RESET, OUTPUT);
     Utils::WritePin(BT_RESET, LOW);
 
+    // Configure open drain outputs with 8mA current
+    // PB5
+    uint8_t bit = digitalPinToBitMask(PB_5);
+    uint8_t port = digitalPinToPort(PB_5);
+    uint32_t portBase = (uint32_t) portBASERegister(port);
+    GPIOPadConfigSet(portBase, bit, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_OD);
+    GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
+    // PE4
+    bit = digitalPinToBitMask(PE_4);
+    port = digitalPinToPort(PE_4);
+    portBase = (uint32_t) portBASERegister(port);
+    GPIOPadConfigSet(portBase, bit, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_OD);
+    GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
+
+
     DCF.Start();
 
     // A longer pause is required to assure that the condensator at VOLTAGE_MEASURE_PIN
