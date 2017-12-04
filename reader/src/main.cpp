@@ -148,8 +148,7 @@ int main(void) {
     NVIC_EnableIRQ(UART0_IRQn);
 
     // Configure SPI0
-    // TODO XXX MISO = PTB4 - collides with my tamper connector
-    // remove tamper resistor and connect PTB4 with PTB1 in rev.1 of the board
+    // Errata: remove tamper resistor and connect PTB4 with PTB1 in rev.1 of the board
     SPI0->C1 = SPI_C1_SPE_MASK
                | SPI_C1_SPIE_MASK
                | SPI_C1_MSTR_MASK;
@@ -372,6 +371,11 @@ void SysTick_Handler(void) {
             serialSend();
         }
     }
+}
+
+void NMI_Handler(void) {
+    // Disable NMI
+    SIM->SOPT &= ~SIM_SOPT_NMIE_MASK;
 }
 
 }
