@@ -95,8 +95,8 @@ void LowLevelInit(void) {
 
     // Reconfigure watchdog
     __disable_irq();
-    WDOG->CNT = 0x02A6;
-    WDOG->CNT = 0x80B4;
+    WDOG->CNT = 0x20C5; // unlock configuration
+    WDOG->CNT = 0x28D9;
     WDOG->TOVAL = 30000; // 30s reset
     WDOG->CS2 = WDOG_CS2_CLK_MASK; // setting 1-kHz clock source
     WDOG->CS1 = WDOG_CS1_EN_MASK; // enable counter running
