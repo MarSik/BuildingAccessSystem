@@ -88,6 +88,9 @@ static volatile uint8_t _delayedSend = 0;
 
 extern "C" {
 
+// Create big endian version of the number
+// See: https://community.nxp.com/thread/350150?commentID=498593#comment
+#define BIG_SHORT_WORD(x) (unsigned short)((x << 8) | (x >> 8))
 
 void LowLevelInit(void) {
     // Disable NMI
@@ -97,9 +100,14 @@ void LowLevelInit(void) {
     __disable_irq();
     WDOG->CNT = 0x20C5; // unlock configuration
     WDOG->CNT = 0x28D9;
-    WDOG->TOVAL = 30000; // 30s reset
-    WDOG->CS2 = WDOG_CS2_CLK_MASK; // setting 1-kHz clock source
-    WDOG->CS1 = WDOG_CS1_EN_MASK; // enable counter running
+    WDOG->TOVAL = BIG_SHORT_WORD(30000); // 30s reset
+    WDOG->WIN = 0;
+    WDOG->CS2 = WDOG_CS2_CLK_MASK // setting 1-kHz clock source
+                | WDOG_CS2_FLG_MASK; // clear WDOG interrupt flag
+    WDOG->CS1 = WDOG_CS1_EN_MASK // enable counter running
+                | WDOG_CS1_DBG_MASK
+                | WDOG_CS1_STOP_MASK
+                | WDOG_CS1_WAIT_MASK; // enable watchdog in all modes
     __enable_irq();
 
     SIM->SCGC |= SIM_SCGC_SWD_MASK
