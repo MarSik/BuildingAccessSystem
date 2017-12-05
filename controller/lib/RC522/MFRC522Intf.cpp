@@ -5,7 +5,6 @@ void
 MFRC522IntfSpi::init()
 {
   // Set the chipSelectPin as digital output, do not select the slave yet
-  pinMode(_chipSelectPin, OUTPUT);
   digitalWrite(_chipSelectPin, HIGH);
 }
 
@@ -257,6 +256,8 @@ const
 
   _serial.setBufferSize(128, 128);
   _serial.begin(115200);
+
+  end();
 }
 
 void
@@ -265,8 +266,8 @@ const
 {
   tx();
   _serial.write(START_FRAME);
-  writeByte(0x02); // Clear CS
-  writeByte(0x01);
+  writeByte(0x02); // Clear CS and LED
+  writeByte(0x05);
   _serial.write(END_FRAME);
   flush();
   rx();
@@ -280,7 +281,7 @@ const
   tx();
   _serial.write(START_FRAME);
   writeByte(0x01); // Set CS
-  writeByte(0x01);
+  writeByte(0x05);
   _serial.write(END_FRAME);
   flush();
   rx();
@@ -298,7 +299,8 @@ const
   _serial.write(END_FRAME);
   flush();
   rx();
-  dropFrame();
+  waitFrame();
+  dropFrameData();
 }
 
 /**
@@ -363,7 +365,7 @@ int MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg	///< The register t
   _serial.write(START_FRAME);
   writeByte(0x00);
   writeByte(0x80 | (reg << 1));	// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
-  writeByte(0);	// Read the value back. Send 0 to stop reading.
+  writeByte(0x00);	// Read the value back. Send 0 to stop reading.
   _serial.write(END_FRAME);
   flush();
   rx();

@@ -153,7 +153,7 @@ public:
   // Functions for setting up the Arduino
   /////////////////////////////////////////////////////////////////////////////////////
 MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
-    _resetPowerDownPin
+    _powerEnable
     (resetPowerDownPin) {
   }
 
@@ -304,16 +304,17 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     bool hardReset = false;
 
     // If a valid pin number has been set, pull device out of power down / reset state.
-    if (_resetPowerDownPin != UINT8_MAX) {
+    if (_powerEnable != UINT8_MAX) {
       // Set the resetPowerDownPin as digital output, do not reset or power down.
-      pinMode(_resetPowerDownPin, OUTPUT);
-      digitalWrite(_resetPowerDownPin, LOW); // The MFRC522 chip is in power down mode.
+      digitalWrite(_powerEnable, HIGH); // The MFRC522 chip is in power down mode.
       MFRC522Logger.println(DEBUG, "HW Reset!");
-      delay(10);
-      digitalWrite(_resetPowerDownPin, HIGH);	// Exit power down mode. This triggers a hard reset.
+      delay(20);
+      digitalWrite(_powerEnable, LOW);	// Exit power down mode. This triggers a hard reset.
       MFRC522Logger.println(DEBUG, "Wait for boot after HW Reset!");
-      delay(50);
-      // Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
+      delay(200);
+      // Give the reader board enough time to charge all capacitors and boot the CPUs
+      // Section 8.8.2 in the MFRC522 datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs.
+      // Let us be generous: 200ms.
       hardReset = true;
     }
 
@@ -322,6 +323,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
     // Initialize interface
     intf.init();
+    delay(10);
+    intf.led(1, true);
 
     if (!hardReset) {		// Perform a soft reset if we haven't triggered a hard reset above.
       if (!PCD_Reset()) return false;
@@ -1206,7 +1209,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 
 protected:
   T & intf;
-  const byte _resetPowerDownPin;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
+  const byte _powerEnable;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
 };
 
 #endif

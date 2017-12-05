@@ -72,36 +72,38 @@ public:
     void led(uint8_t no, bool value) const;
 
     void flush() const {
-        while (_serial.available()) {
-            auto b = _serial.read();
-            Serial.write("Discarding PCD byte: ");
-            Serial.println(b);
-        }
+        _serial.flush();
     }
 
 private:
     HardwareSerial & _serial;
-    uint8_t _txEn;
+    const uint8_t _txEn;
 
-    const int ESC_XOR = 0x20;
-    const int ESC = '\\';
-    const int START_FRAME = '{';
-    const int END_FRAME = '}';
+    const uint8_t ESC_XOR = 0x20;
+    const uint8_t ESC = '\\';
+    const uint8_t START_FRAME = '{';
+    const uint8_t END_FRAME = '}';
 
     void tx(void) const {
       digitalWrite(_txEn, LOW);
     }
 
     void rx(void) const {
+        Serial.print("\r\n");
       digitalWrite(_txEn, HIGH);
     }
 
     int waitRead() const {
         int rx;
-        uint32_t timeout = millis() + 100;
+        uint32_t timeout = millis() + 1000;
 
         do {
             rx = _serial.read();
+            if (rx != -1) {
+                Serial.print(rx, HEX);
+                Serial.print(' ');
+                Serial.flush();
+            }
         } while(rx == -1 && timeout > millis());
         return rx;
     }
@@ -111,14 +113,24 @@ private:
         do {
             rx = waitRead();
         } while(rx != -1 && rx != START_FRAME);
+
+        Serial.write(" START[");
+        Serial.print(rx, HEX);
+        Serial.write("]\r\n");
+        Serial.flush();
+
         return rx;
     };
 
-    void writeByte(int x) const {
+    void writeByte(byte x) const {
         if (x & 0x70) {
             x ^= ESC_XOR;
+            Serial.print(x, HEX);
+            Serial.print(' ');
             _serial.write('\\');
         }
+        Serial.print(x, HEX);
+        Serial.print(' ');
         _serial.write(x);
     }
 
@@ -134,9 +146,24 @@ private:
     }
 
     void dropFrameData() const {
-        while (readByte() != END_FRAME) {
-
-        }
+        int b;
+        do {
+            b = _serial.peek();
+            if (b != -1) {
+                Serial.print(b, HEX);
+                Serial.print(' ');
+                Serial.flush();
+            }
+            if (b == START_FRAME) {
+                Serial.print("< ");
+                Serial.flush();
+                return;
+            } else {
+                _serial.read();
+            }
+        } while (b != END_FRAME);
+        Serial.print("\r\nEND\r\n");
+        Serial.flush();
     }
 
     void dropFrame() const {

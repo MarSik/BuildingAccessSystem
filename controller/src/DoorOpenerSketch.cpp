@@ -16,49 +16,49 @@
 #define PASSWORD_TIMEOUT  5
 
 // This Arduino / Teensy pin is connected to the relay that opens the door 1
-#define DOOR_PIN       9
+#define DOOR_PIN       PA_6
 // Sensing whether someone is pushing the door open button
-#define BUZZ_SENSE     10
+#define BUZZ_SENSE     PA_7
 
 // Tamper detection pin
-#define TAMPER         8
+#define TAMPER         PA_5
 
 // This Arduino / Teensy pin is connected to the transistor that charges the battery
-#define CHARGE_PIN       19
-#define CHARGE_BATTERY_ADC 3
-#define CHARGE_CURR1_ADC 1
-#define CHARGE_CURR2_ADC 0
-#define CHARGE_VCC_ADC 10
+#define CHARGE_PIN       PB_2
+#define CHARGE_BATTERY_ADC A3
+#define CHARGE_CURR1_ADC A1
+#define CHARGE_CURR2_ADC A0
+#define CHARGE_VCC_ADC A10
 
 // Bluetooth pins
-#define BT_RESET 37
-#define BT_AT 36 // AT log.1, communication log.0
+#define BT_RESET PC_4
+#define BT_AT PC_5 // AT log.1, communication log.0
 #define BT_SERIAL 3
 
 // SPI flash memory
-#define MEM_CS 24
+#define MEM_CS PD_1
 #define MEM_SPI 3
-#define MEM_WP 27 // WP log.0
+#define MEM_WP PE_1 // WP log.0
 
 // Reader
-// TODO Make sure the TX pin can provide at least 8mA
+// Make sure the TX pin can provide at least 8mA
 #define READER_SERIAL 1
-#define READER_TX 2 // TX active log.0
-#define READER_ON 5 // ON log.0
+#define READER_TX PB_5 // TX active log.0
+#define READER_ON PE_4 // ON log.0
 
 // This Arduino / Teensy pin is connected to the reader RSTPDN pin (reset the reader)
 // When a communication error with the reader is detected the board is reset automatically.
-#define RESET_PIN         5
+#define RESET_PIN         READER_ON
 
 
 // This Arduino / Teensy pin is connected to the green LED in a two color LED.
 // The green LED flashes fast while no card is present and flashes 1 second when opening the door.
-#define LED_GREEN_PIN    39
+#define LED_GREEN_PIN    GREEN_LED
 
 // This Arduino / Teensy pin is connected to the red LED in a two color LED.
 // The red LED flashes slowly when a communication error occurred with the reader chip and when an unauthorized person tries to open the door.
 // It flashes fast when a power failure has been detected. (Charging battery failed)
-#define LED_RED_PIN      30
+#define LED_RED_PIN      RED_LED
 
 // This Arduino / Teensy pin is connected to the voltage divider that measures the 13,6V battery voltage
 #define VOLTAGE_MEASURE_PIN  A3
@@ -88,15 +88,11 @@
 #define RF_OFF_INTERVAL  1000
 
 #ifndef LED_BUILTIN
-#define LED_BUILTIN 40
+#define LED_BUILTIN BLUE_LED
 #endif // LED_BUILTIN
 
 // DCF77 receiver
-#define DCF77_PIN 11
-
-// TX EN pin
-// pin for RS485 direction control
-#define TXEN_PIN 2
+#define DCF77_PIN PA_2
 
 // ######################################################################################
 
@@ -115,8 +111,8 @@
 
 DCF77 DCF = DCF77(DCF77_PIN, DCF77_PIN);
 
-MFRC522IntfSpiOver485 mfrcIntf(Serial1, TXEN_PIN);
-MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522(mfrcIntf, RESET_PIN);  // Create MFRC522 instance
+MFRC522IntfSpiOver485 mfrcIntf(Serial1, READER_TX);
+MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522(mfrcIntf, READER_ON);  // Create MFRC522 instance
 CardManager<MFRC522IntfSpiOver485> cardManager(mfrc522);
 
 // The tick counter starts at zero when the CPU is reset.
@@ -137,6 +133,8 @@ uint32_t   gu32_CommandPos = 0;     // Index in gs8_CommandBuffer
 uint64_t   gu64_LastPasswd = 0;     // Timestamp when the user has enetered the password successfully
 uint64_t   gu64_LastID     = 0;     // The last card UID that has been read by the RFID reader
 bool       gb_InitSuccess  = false; // true if the reader has been initialized successfully
+
+void _prepareHighCurrentODOutputGPIO(const uint8_t arduinoPort);
 
 void SetLED(eLED e_LED)
 {
@@ -739,20 +737,10 @@ void setup()
     Utils::WritePin(BT_RESET, LOW);
 
     // Configure open drain outputs with 8mA current
-    // PB5
-    uint8_t bit = digitalPinToBitMask(PB_5);
-    uint8_t port = digitalPinToPort(PB_5);
-    uint32_t portBase = (uint32_t) portBASERegister(port);
-    GPIOPadConfigSet(portBase, bit, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_OD);
-    GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
-    // PE4
-    bit = digitalPinToBitMask(PE_4);
-    port = digitalPinToPort(PE_4);
-    portBase = (uint32_t) portBASERegister(port);
-    GPIOPadConfigSet(portBase, bit, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_OD);
-    GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
+    _prepareHighCurrentODOutputGPIO(READER_ON);
+    _prepareHighCurrentODOutputGPIO(READER_TX);
 
-
+    // Enable DCF receiver
     DCF.Start();
 
     // A longer pause is required to assure that the condensator at VOLTAGE_MEASURE_PIN
@@ -772,6 +760,15 @@ void setup()
     InitReader(false);
 }
 
+void _prepareHighCurrentODOutputGPIO(const uint8_t arduinoPort) {
+    const uint8_t bit = digitalPinToBitMask(arduinoPort);
+    const uint8_t port = digitalPinToPort(arduinoPort);
+    const uint32_t portBase = (uint32_t) portBASERegister(port);
+    ROM_GPIOPadConfigSet(portBase, bit, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_OD);
+    ROM_GPIOPinWrite(portBase, bit, 1);
+    ROM_GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
+}
+
 void loop()
 {
     bool b_KeyPress  = ReadKeyboardInput();
@@ -783,6 +780,7 @@ void loop()
     if (DCFtime != 0)
     {
         setTime(DCFtime);
+        FlashLED(LED_GREEN, 250);
     }
 
     static uint64_t u64_LastRead = 0;

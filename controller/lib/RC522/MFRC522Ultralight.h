@@ -5,7 +5,7 @@
 
 template < class T > class MFRC522Ultralight:public MFRC522Mifare < T > {
 public:
-  MFRC522Ultralight(T & intf, const byte resetPowerDownPin) : MFRC522Mifare<T>(intf, resetPowerDownPin) {}
+  MFRC522Ultralight(T & intf, const byte powerEnablePin) : MFRC522Mifare<T>(intf, powerEnablePin) {}
 
   /**
    * Writes a 4 byte page to the active MIFARE Ultralight PICC.

@@ -5,7 +5,7 @@
 
 template < class T > class MFRC522Mifare : public MFRC522 < T > {
 public:
-  MFRC522Mifare(T & intf, byte resetPowerDownPin) : MFRC522<T>(intf, resetPowerDownPin) {}
+  MFRC522Mifare(T & intf, byte powerEnablePin) : MFRC522<T>(intf, powerEnablePin) {}
 
   /**
    * Wrapper for MIFARE protocol communication.
