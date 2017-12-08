@@ -215,7 +215,9 @@ bool WaitForKeyYesNo()
 bool ReadCard(uint64_t* uid)
 {
   // Enable field
-  mfrc522.PCD_AntennaOn();
+  if (!mfrc522.PCD_AntennaOn()) {
+      return false;
+  }
   delay(100);
 
   // Look for new cards
@@ -243,7 +245,6 @@ bool ReadCard(uint64_t* uid)
     *uid <<= 8;
     *uid += mfrc522.uid.uidByte[idx];
   }
-  Utils::PrintHex32(*uid, LF);
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
   mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid), Serial);

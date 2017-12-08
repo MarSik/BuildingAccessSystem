@@ -188,7 +188,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 			      byte mask	///< The bits to set.
     ) const
   {
-    byte tmp;
+    int tmp;
     tmp = PCD_ReadRegister(reg);
     if (tmp == -1) return false;
     return PCD_WriteRegister(reg, tmp | mask);	// set bit mask
@@ -201,7 +201,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
 				byte mask	///< The bits to clear.
     ) const
   {
-    byte tmp;
+    int tmp;
     tmp = PCD_ReadRegister(reg);
     if (tmp == -1) return false;
     return PCD_WriteRegister(reg, tmp & (~mask));	// clear bit mask
@@ -229,7 +229,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // Wait for the CRC calculation to complete. Each iteration of the while-loop takes 17.73us.
     for (uint16_t i = 5000; i > 0; i--) {
       // DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
-      byte n = PCD_ReadRegister(DivIrqReg);
+      int n = PCD_ReadRegister(DivIrqReg);
       if (n & 0x04) {		// CRCIRq bit set - calculation done
 	PCD_WriteRegister(CommandReg, PCD_Idle);	// Stop calculating CRC for new content in the FIFO.
 	// Transfer the result from the registers to the result buffer
@@ -325,6 +325,9 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     intf.init();
     delay(10);
     intf.led(1, true);
+    intf.configureSpi(0b01010000, 0b01110010);
+
+    MFRC522Logger.setLevel(DEBUG);
 
     if (!hardReset) {		// Perform a soft reset if we haven't triggered a hard reset above.
       if (!PCD_Reset()) return false;
@@ -343,6 +346,8 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     }
 
     MFRC522Logger.println(DEBUG, ver, HEX);
+
+    MFRC522Logger.setLevel(INFO);
 
     // Reset baud rates
     if (!PCD_WriteRegister(TxModeReg, 0x00)) return false;
@@ -394,8 +399,18 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     if (value == -1) return false;
     if ((value & 0x03) != 0x03) {
       if (!PCD_WriteRegister(TxControlReg, value | 0x03)) return false;
+    } else {
+      return true;
     }
-    return true;
+
+    // Wait for enabled antenna
+    uint32_t deadline = millis() + 300;
+    do {
+      value = PCD_ReadRegister(TxControlReg);
+      if (value == -1) return false;
+    } while ((value & 0x03) != 0x03 && millis() < deadline);
+
+    return (value & 0x03) == 0x03;
   }				// End PCD_AntennaOn()
 
 /**
@@ -484,7 +499,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     PCD_WriteRegister(AutoTestReg, 0x00);
 
     // Determine firmware version (see section 9.3.4.8 in spec)
-    byte version = PCD_ReadRegister(VersionReg);
+    int version = PCD_ReadRegister(VersionReg);
 
     // Pick the appropriate reference values
     const byte *reference;
@@ -501,7 +516,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     case 0x92:			// Version 2.0
       reference = MFRC522_firmware_referenceV2_0;
       break;
-    default:			// Unknown version
+    default:			// Unknown version or timeout
       return false;		// abort test
     }
 

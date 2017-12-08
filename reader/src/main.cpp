@@ -55,7 +55,7 @@ volatile Buffer_t RxBuffer;
 static volatile uint8_t spiSent = 0;
 static volatile uint8_t spiReceived = 0;
 
-static const uint8_t TX_RX_DELAY = 50;
+static const uint8_t TX_RX_DELAY = 2;
 
 static const uint8_t FRAME_MARKER_START = '{';
 static const uint8_t FRAME_MARKER_ESC = '\\';
@@ -104,7 +104,7 @@ void LowLevelInit(void) {
     WDOG->WIN = 0;
     WDOG->CS2 = WDOG_CS2_CLK_MASK // setting 1-kHz clock source
                 | WDOG_CS2_FLG_MASK; // clear WDOG interrupt flag
-    WDOG->CS1 = WDOG_CS1_EN_MASK // enable counter running
+    WDOG->CS1 = 0 // WDOG_CS1_EN_MASK // enable counter running
                 | WDOG_CS1_DBG_MASK
                 | WDOG_CS1_STOP_MASK
                 | WDOG_CS1_WAIT_MASK; // enable watchdog in all modes
@@ -162,15 +162,16 @@ int main(void) {
     // Errata: remove tamper resistor and connect PTB4 with PTB1 in rev.1 of the board
     SPI0->C1 = SPI_C1_SPE_MASK
                | SPI_C1_SPIE_MASK
-               | SPI_C1_MSTR_MASK;
-
+               | SPI_C1_MSTR_MASK
+               | SPI_C1_CPHA_MASK
+               | SPI_C1_CPOL_MASK;
     SPI0->C2 = 0;
     SPI0->BR = SPI_BR_SPPR_MASK | 0b0010; // prescalers 8 and 8 -> cca 300kHz SPI clock
 
     NVIC_EnableIRQ(SPI0_IRQn);
 
     // Configure SysTick
-    SysTick->LOAD = 200000; // 500us
+    SysTick->LOAD = 100000; // 250us
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk
             | SysTick_CTRL_ENABLE_Msk
             | SysTick_CTRL_TICKINT_Msk;
@@ -179,11 +180,11 @@ int main(void) {
 
     // Main echo loop
     while (1) {
-        /* Reset watchdog clock */
+        /* Reset watchdog clock
         __disable_irq();
         WDOG->CNT = 0x02A6;
         WDOG->CNT = 0x80B4;
-        __enable_irq();
+        __enable_irq(); */
 
         if (FrameState == FRAME_DONE) {
             // Process received data - echo it back
@@ -241,18 +242,47 @@ int main(void) {
 
 
             if (RxBuffer.size > 1
-                && RxBuffer.buffer[0] == 0x00
-                && SPI0->S & SPI_S_SPTEF_MASK) {
+                && RxBuffer.buffer[0] == 0x00) {
                 RxBuffer.cur++; // Skip command byte
                 serialQueue(0x00); // OK marker
 
                 // Pass first data byte to SPI and enable interrupts
                 spiSent = 1;
                 spiReceived = 0;
+                while (!(SPI0->S & SPI_S_SPTEF_MASK)) {
+                    // Wait for the send buffer to be empty
+                    // See section: 30.3.5
+                }
                 SPI0->D = RxBuffer.buffer[RxBuffer.cur++];
                 if (RxBuffer.cur < RxBuffer.size) {
                     SPI0->C1 |= SPI_C1_SPTIE_MASK;
                 }
+                continue;
+            }
+
+            // SPI configuration byte
+            if (RxBuffer.size == 2
+                && RxBuffer.buffer[0] == 0xE0) {
+
+                SPI0->C1 = RxBuffer.buffer[1]
+                           | SPI_C1_SPIE_MASK
+                           | SPI_C1_MSTR_MASK;
+
+                serialQueue(0x00); // OK marker
+                serialQueueEnd();
+                _delayedSend = TX_RX_DELAY;
+                continue;
+            }
+
+            // SPI baud rate configuration byte
+            if (RxBuffer.size == 2
+                && RxBuffer.buffer[0] == 0xE1) {
+
+                SPI0->BR = RxBuffer.buffer[1] & 0b01111111;
+
+                serialQueue(0x00); // OK marker
+                serialQueueEnd();
+                _delayedSend = TX_RX_DELAY;
                 continue;
             }
 
@@ -283,16 +313,6 @@ int main(void) {
 
 void SPI0_IRQHandler(void) {
     uint8_t status = SPI0->S;
-    if (status & SPI_S_SPRF_MASK) {
-        const uint8_t data = SPI0->D;
-        serialQueue(data);
-        spiReceived++;
-        if (spiReceived == spiSent) {
-            // Last byte processed, trigger uart
-            serialQueueEnd();
-            _delayedSend = TX_RX_DELAY;
-        }
-    }
 
     if (status & SPI_S_SPTEF_MASK) {
         if (RxBuffer.cur < RxBuffer.size) {
@@ -302,6 +322,17 @@ void SPI0_IRQHandler(void) {
                 // Last byte queued; disable TX interrupt
                 SPI0->C1 &= ~SPI_C1_SPTIE_MASK;
             }
+        }
+    }
+
+    if (status & SPI_S_SPRF_MASK) {
+        const uint8_t data = SPI0->D;
+        serialQueue(data);
+        spiReceived++;
+        if (spiReceived == spiSent && RxBuffer.cur == RxBuffer.size) {
+            // Last byte processed, trigger uart
+            serialQueueEnd();
+            _delayedSend = TX_RX_DELAY;
         }
     }
 }

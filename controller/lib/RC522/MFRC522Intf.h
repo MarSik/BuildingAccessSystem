@@ -70,6 +70,7 @@ public:
 
     // Toggle LED, no is 1 or 2, value controls the power
     void led(uint8_t no, bool value) const;
+    void configureSpi(uint8_t c1, uint8_t baud) const;
 
     void flush() const {
         _serial.flush();
@@ -84,92 +85,21 @@ private:
     const uint8_t START_FRAME = '{';
     const uint8_t END_FRAME = '}';
 
-    void tx(void) const {
-      digitalWrite(_txEn, LOW);
-    }
+    void tx(void) const;
 
-    void rx(void) const {
-        Serial.print("\r\n");
-      digitalWrite(_txEn, HIGH);
-    }
+    void rx(void) const;
 
-    int waitRead() const {
-        int rx;
-        uint32_t timeout = millis() + 1000;
+    int waitRead() const;
 
-        do {
-            rx = _serial.read();
-            if (rx != -1) {
-                Serial.print(rx, HEX);
-                Serial.print(' ');
-                Serial.flush();
-            }
-        } while(rx == -1 && timeout > millis());
-        return rx;
-    }
+    int waitFrame() const;
 
-    int waitFrame() const {
-        int rx;
-        do {
-            rx = waitRead();
-        } while(rx != -1 && rx != START_FRAME);
+    void writeByte(byte x) const;
 
-        Serial.write(" START[");
-        Serial.print(rx, HEX);
-        Serial.write("]\r\n");
-        Serial.flush();
+    int readByte() const;
 
-        return rx;
-    };
+    void dropFrameData() const;
 
-    void writeByte(byte x) const {
-        if (x & 0x70) {
-            x ^= ESC_XOR;
-            Serial.print(x, HEX);
-            Serial.print(' ');
-            _serial.write('\\');
-        }
-        Serial.print(x, HEX);
-        Serial.print(' ');
-        _serial.write(x);
-    }
-
-    int readByte() const {
-        int rx = waitRead();
-        if (rx == ESC) {
-            rx = waitRead();
-            if (rx >= 0) {
-                rx ^= ESC_XOR;
-            }
-        }
-        return rx;
-    }
-
-    void dropFrameData() const {
-        int b;
-        do {
-            b = _serial.peek();
-            if (b != -1) {
-                Serial.print(b, HEX);
-                Serial.print(' ');
-                Serial.flush();
-            }
-            if (b == START_FRAME) {
-                Serial.print("< ");
-                Serial.flush();
-                return;
-            } else {
-                _serial.read();
-            }
-        } while (b != END_FRAME);
-        Serial.print("\r\nEND\r\n");
-        Serial.flush();
-    }
-
-    void dropFrame() const {
-        waitFrame();
-        dropFrameData();
-    }
+    void dropFrame() const;
 };
 
 class MFRC522IntfSpi

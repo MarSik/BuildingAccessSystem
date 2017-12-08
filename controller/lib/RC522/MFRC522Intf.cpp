@@ -254,10 +254,8 @@ const
 {
   rx();
 
-  _serial.setBufferSize(128, 128);
+  _serial.setBufferSize(32, 32);
   _serial.begin(115200);
-
-  end();
 }
 
 void
@@ -266,8 +264,8 @@ const
 {
   tx();
   _serial.write(START_FRAME);
-  writeByte(0x02); // Clear CS and LED
-  writeByte(0x05);
+  writeByte(0x02); // Clear CS
+  writeByte(0x01);
   _serial.write(END_FRAME);
   flush();
   rx();
@@ -281,7 +279,7 @@ const
   tx();
   _serial.write(START_FRAME);
   writeByte(0x01); // Set CS
-  writeByte(0x05);
+  writeByte(0x01);
   _serial.write(END_FRAME);
   flush();
   rx();
@@ -371,8 +369,8 @@ int MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg	///< The register t
   rx();
 
   waitFrame();
-  readByte(); // drop status
-  readByte(); // drop first byte
+  int status = readByte(); // drop status
+  int zero = readByte(); // drop first byte
   value = readByte();
   dropFrameData();
 
@@ -409,8 +407,8 @@ MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg,	///< The register to r
   rx();
 
   waitFrame();
-  readByte(); // drop status byte
-  readByte(); // drop first byte
+  if (readByte() != 0) return false; // drop status byte
+  if (readByte() < 0) return false; // drop first byte
 
   byte index = 0;		// Index in values array.
   if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
@@ -430,3 +428,97 @@ MFRC522IntfSpiOver485::PCD_ReadRegister(PCD_Register reg,	///< The register to r
   end();			// Release slave again
   return true;
 }				// End PCD_ReadRegister()
+
+void MFRC522IntfSpiOver485::tx(void) const {
+    digitalWrite(_txEn, LOW);
+}
+
+void MFRC522IntfSpiOver485::rx(void) const {
+    digitalWrite(_txEn, HIGH);
+}
+
+int MFRC522IntfSpiOver485::waitRead() const {
+    int rx;
+    const uint32_t timeout = millis() + 10;
+
+    do {
+        rx = _serial.read();
+    } while(rx == -1 && timeout > millis());
+    return rx;
+}
+
+int MFRC522IntfSpiOver485::waitFrame() const {
+    int rx;
+    do {
+        rx = waitRead();
+    } while(rx != -1 && rx != START_FRAME);
+
+    return rx;
+};
+
+void MFRC522IntfSpiOver485::writeByte(byte x) const {
+    if (x & 0x70) {
+        x ^= ESC_XOR;
+        _serial.write(ESC);
+    }
+
+    _serial.write(x);
+}
+
+int MFRC522IntfSpiOver485::readByte() const {
+    int rx = waitRead();
+    if (rx == ESC) {
+        rx = waitRead();
+        if (rx >= 0) {
+            rx ^= ESC_XOR;
+        }
+    }
+    return rx;
+}
+
+void MFRC522IntfSpiOver485::dropFrameData() const {
+    int b;
+    const uint32_t timeout = millis() + 100;
+    do {
+        b = _serial.peek();
+
+        if (b == START_FRAME) {
+            return;
+        } else if (b == -1) {
+            continue;
+        } else {
+            b = _serial.read();
+        }
+    } while (b != END_FRAME && timeout > millis());
+}
+
+void MFRC522IntfSpiOver485::dropFrame() const {
+    waitFrame();
+    dropFrameData();
+}
+
+void MFRC522IntfSpiOver485::configureSpi(uint8_t c1, uint8_t baud) const {
+    tx();
+    _serial.write(START_FRAME);
+    writeByte(0xE0);
+    writeByte(c1); // enable SPI
+    _serial.write(END_FRAME);
+    flush();
+    rx();
+    waitFrame();
+    dropFrameData();
+
+    // SPI disabled, can't set baudrate
+    if (!(c1 & (1 << 6)))
+        return;
+
+    tx();
+    _serial.write(START_FRAME);
+    writeByte(0xE1);
+    writeByte(baud); // set baud rate
+    _serial.write(END_FRAME);
+    flush();
+    rx();
+    waitFrame();
+    dropFrameData();
+}
