@@ -250,12 +250,34 @@ MFRC522IntfSerial::PCD_ReadRegister(const PCD_Register reg,	///< The register to
 
 void
 MFRC522IntfSpiOver485::init()
-const
 {
   rx();
 
   _serial.setBufferSize(32, 32);
   _serial.begin(115200);
+
+    boost485Speed();
+
+    configureSpi(0b01010000, 0b00000011);
+
+    _ready = true;
+}
+
+void MFRC522IntfSpiOver485::boost485Speed() const {
+    tx();
+    _serial.write(START_FRAME);
+    writeByte(0xE3);
+    writeByte(0x02); // 625000 baud
+    _serial.write(END_FRAME);
+    flush();
+    rx();
+    waitFrame();
+    int res = readByte();
+    dropFrameData();
+
+    if (res == 0x00) {
+        _serial.begin(625000);
+    }
 }
 
 void
@@ -457,7 +479,7 @@ int MFRC522IntfSpiOver485::waitFrame() const {
 };
 
 void MFRC522IntfSpiOver485::writeByte(byte x) const {
-    if (x & 0x70) {
+    if (x & 0x78) { // escaped bytes: 0x7B, 0x7D, 0x7E
         x ^= ESC_XOR;
         _serial.write(ESC);
     }

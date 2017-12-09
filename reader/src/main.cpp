@@ -55,10 +55,8 @@ volatile Buffer_t RxBuffer;
 static volatile uint8_t spiSent = 0;
 static volatile uint8_t spiReceived = 0;
 
-static const uint8_t TX_RX_DELAY = 2;
-
 static const uint8_t FRAME_MARKER_START = '{';
-static const uint8_t FRAME_MARKER_ESC = '\\';
+static const uint8_t FRAME_MARKER_ESC = 0x7E;
 static const uint8_t FRAME_MARKER_ESC_XOR = 0x20;
 static const uint8_t FRAME_MARKER_END = '}';
 
@@ -83,8 +81,6 @@ bool serialSend();
 void serialQueueEnd();
 void serialQueueBuffer(volatile Buffer_t* buffer);
 void serialQueue(uint8_t byte);
-
-static volatile uint8_t _delayedSend = 0;
 
 extern "C" {
 
@@ -134,12 +130,19 @@ void SystemInit(void) {
             ;
 }
 
+void primeSend() {
+    SysTick->VAL = 0;
+    SysTick->CTRL = SysTick_CTRL_TICKINT_Msk
+                    | SysTick_CTRL_ENABLE_Msk
+                    | SysTick_CTRL_CLKSOURCE_Msk;
+}
+
 int main(void) {
     GPIOA->PIDR |= PTC2 | PTC3 | PTA1 | PTC0 | PTB0; // disable input
     GPIOA->PDDR |= PTC2 | PTC3 | PTA1 | PTC0 | PTB0; // set as output
 
-    GPIOA->PSOR = PTC2 | PTC3 | PTC0 | PTB0; // set output to 1
-    GPIOA->PCOR = PTA1; // clear output to 0
+    FGPIOA->PSOR = PTC2 | PTC3 | PTC0 | PTB0; // set output to 1
+    FGPIOA->PCOR = PTA1; // clear output to 0
 
     // UART on PTA2 / PTA3
     SIM->PINSEL |= SIM_PINSEL_UART0PS_MASK;
@@ -149,7 +152,7 @@ int main(void) {
 
     // UART prescaler
     UART0->BDH = 0;
-    UART0->BDL = 11; // Bus clock 20Mhz, 115200 baud, error -1.36%
+    UART0->BDL = 11; // Bus clock 20Mhz, 115200 baud
 
     // TX and RX enable, incl. interrupts
     UART0->C2 |= UART_C2_TE_MASK
@@ -170,11 +173,10 @@ int main(void) {
 
     NVIC_EnableIRQ(SPI0_IRQn);
 
-    // Configure SysTick
-    SysTick->LOAD = 100000; // 250us
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk
-            | SysTick_CTRL_ENABLE_Msk
-            | SysTick_CTRL_TICKINT_Msk;
+    // Configure SysTick reload value
+    // (X-1 see http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0662b/BGBEEJHC.html)
+    SysTick->LOAD = 200000 - 1; // 500us (200 000 cycles at 40Mhz)
+    SysTick->CTRL = 0;
 
     GPIOA->PTOR = PTC2 | PTC3; // toggle outputs off
 
@@ -194,24 +196,24 @@ int main(void) {
             if (RxBuffer.size == 2
                 && RxBuffer.buffer[0] == 0x01) {
                 if (RxBuffer.buffer[1] & 0b001) {
-                    GPIOA->PSOR = PTB0;
+                    FGPIOA->PSOR = PTB0;
                 }
 
                 if (RxBuffer.buffer[1] & 0b010) {
-                    GPIOA->PSOR = PTC2;
+                    FGPIOA->PSOR = PTC2;
                 }
 
                 if (RxBuffer.buffer[1] & 0b100) {
-                    GPIOA->PSOR = PTC3;
+                    FGPIOA->PSOR = PTC3;
                 }
 
                 if (RxBuffer.buffer[1] & 0b1000) {
-                    GPIOA->PSOR = PTC0;
+                    FGPIOA->PSOR = PTC0;
                 }
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = TX_RX_DELAY;
+                primeSend();
                 continue;
             }
 
@@ -219,24 +221,24 @@ int main(void) {
             if (RxBuffer.size == 2
                 && RxBuffer.buffer[0] == 0x02) {
                 if (RxBuffer.buffer[1] & 0b001) {
-                    GPIOA->PCOR = PTB0;
+                    FGPIOA->PCOR = PTB0;
                 }
 
                 if (RxBuffer.buffer[1] & 0b010) {
-                    GPIOA->PCOR = PTC2;
+                    FGPIOA->PCOR = PTC2;
                 }
 
                 if (RxBuffer.buffer[1] & 0b100) {
-                    GPIOA->PCOR = PTC3;
+                    FGPIOA->PCOR = PTC3;
                 }
 
                 if (RxBuffer.buffer[1] & 0b1000) {
-                    GPIOA->PCOR = PTC0;
+                    FGPIOA->PCOR = PTC0;
                 }
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = TX_RX_DELAY;
+                primeSend();
                 continue;
             }
 
@@ -270,7 +272,18 @@ int main(void) {
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = TX_RX_DELAY;
+                primeSend();
+                continue;
+            }
+
+            if (RxBuffer.size == 2
+                && RxBuffer.buffer[0] == 0xE2) {
+
+                SPI0->C2 = RxBuffer.buffer[1];
+
+                serialQueue(0x00); // OK marker
+                serialQueueEnd();
+                primeSend();
                 continue;
             }
 
@@ -282,7 +295,31 @@ int main(void) {
 
                 serialQueue(0x00); // OK marker
                 serialQueueEnd();
-                _delayedSend = TX_RX_DELAY;
+                primeSend();
+                continue;
+            }
+
+            // UART speed
+            if (RxBuffer.size == 2
+                && RxBuffer.buffer[0] == 0xE3) {
+
+                if (RxBuffer.buffer[1] > 0) {
+                    serialQueue(0x00); // OK marker
+                } else {
+                    serialQueue(0xFF);
+                }
+                serialQueueEnd();
+                primeSend();
+
+                if (RxBuffer.buffer[1] == 0) {
+                    continue;
+                }
+
+                // finish transmitting before changing speed
+                while (FrameState != FRAME_IDLE)
+                    ;
+
+                UART0->BDL = RxBuffer.buffer[1];
                 continue;
             }
 
@@ -296,7 +333,7 @@ int main(void) {
                 serialQueue('O');
                 serialQueue('K');
                 serialQueueEnd();
-                _delayedSend = TX_RX_DELAY;
+                primeSend();
                 continue;
             }
 
@@ -304,7 +341,7 @@ int main(void) {
             serialQueue(0xff); // error marker
             serialQueueBuffer(&RxBuffer);
             serialQueueEnd();
-            _delayedSend = TX_RX_DELAY;
+            primeSend();
         }
 
         __WFI();
@@ -332,7 +369,7 @@ void SPI0_IRQHandler(void) {
         if (spiReceived == spiSent && RxBuffer.cur == RxBuffer.size) {
             // Last byte processed, trigger uart
             serialQueueEnd();
-            _delayedSend = TX_RX_DELAY;
+            primeSend();
         }
     }
 }
@@ -402,17 +439,13 @@ void UART0_IRQHandler(void) {
         UART0->C2 &= ~(UART_C2_TIE_MASK | UART_C2_TCIE_MASK);
 
         // Disable driver TX direction
-        GPIOA->PCOR = PTA1;
+        FGPIOA->PCOR = PTA1;
     }
 }
 
 void SysTick_Handler(void) {
-    // Perform delayed send
-    if (_delayedSend > 0) {
-        if((--_delayedSend) == 0) {
-            serialSend();
-        }
-    }
+    SysTick->CTRL = 0;
+    serialSend();
 }
 
 void NMI_Handler(void) {
@@ -424,7 +457,7 @@ void NMI_Handler(void) {
 
 void _sendNextByte() {
     // Enable driver TX direction
-    GPIOA->PSOR = PTA1;
+    FGPIOA->PSOR = PTA1;
 
     if (TxBuffer.cur < TxBuffer.size) {
         UART0->D = TxBuffer.buffer[TxBuffer.cur++];

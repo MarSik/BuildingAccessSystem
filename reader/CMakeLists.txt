@@ -19,4 +19,3 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} _cmsis)
 
 # Project specific toolchain initialization
 INCLUDE(${TOOLCHAIN_INIT})
-

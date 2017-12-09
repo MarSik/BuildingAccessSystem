@@ -54,11 +54,15 @@ private:
 class MFRC522IntfSpiOver485
 {
 public:
-    MFRC522IntfSpiOver485(HardwareSerial & serial, uint8_t txEn):_serial(serial),_txEn(txEn)
+    MFRC522IntfSpiOver485(HardwareSerial & serial, uint8_t txEn):_serial(serial),_txEn(txEn),_ready(false)
     {
     }
 
-    void init() const;
+    bool ready() const {
+        return _ready;
+    }
+
+    void init();
     void begin() const;
 
     boolean PCD_WriteRegister(const PCD_Register reg, const byte value) const;
@@ -79,9 +83,10 @@ public:
 private:
     HardwareSerial & _serial;
     const uint8_t _txEn;
+    bool _ready;
 
     const uint8_t ESC_XOR = 0x20;
-    const uint8_t ESC = '\\';
+    const uint8_t ESC = 0x7E;
     const uint8_t START_FRAME = '{';
     const uint8_t END_FRAME = '}';
 
@@ -100,6 +105,8 @@ private:
     void dropFrameData() const;
 
     void dropFrame() const;
+
+    void boost485Speed() const;
 };
 
 class MFRC522IntfSpi

@@ -142,22 +142,24 @@ void SetLED(eLED e_LED)
     Utils::WritePin(LED_GREEN_PIN, LOW);
     Utils::WritePin(LED_BUILTIN,   LOW);
 
-    //mfrcIntf.led(1, true);
-    //mfrcIntf.led(2, true);
+    if (mfrcIntf.ready()) {
+        mfrcIntf.led(1, false);
+        mfrcIntf.led(2, false);
+    }
 
     switch (e_LED)
     {
         case LED_RED:
             Utils::WritePin(LED_RED_PIN, HIGH);
-            //mfrcIntf.led(1, true);
-            //Utils::WritePin(LED_BUILTIN, HIGH); // LED on Teensy
+            if (mfrcIntf.ready())
+                mfrcIntf.led(2, true);
             break;
         case LED_GREEN:
             Utils::WritePin(LED_GREEN_PIN, HIGH);
-            //mfrcIntf.led(2, true);
-            //Utils::WritePin(LED_BUILTIN,   HIGH); // LED on Teensy
+            if (mfrcIntf.ready())
+                mfrcIntf.led(1, true);
             break;
-        default:  // Just to avoid stupid gcc compiler warning
+        default:  // Just to avoid gcc compiler warning
             break;
     }
 }
@@ -267,7 +269,7 @@ bool WaitForCard(uint64_t* pk_Card)
             // Avoid that later the door is opened for this card if the card is a long time in the RF field.
             gu64_LastID = uid;
 
-            // All the stuff in this function takes about 2 seconds because the SPI bus speed has been throttled to 10 kHz.
+            // All the stuff in this function takes a bit of time, because the reader is remote
             Utils::Print("Processing... (please do not remove the card)\r\n");
             return true;
         }
@@ -720,12 +722,23 @@ bool ReadKeyboardInput()
     return b_KeyPress;
 }
 
+void handleBuzzer(void) {
+    const int val = digitalRead(BUZZ_SENSE);
+    if (val == LOW) {
+        digitalWrite(DOOR_PIN, HIGH);
+    } else {
+        digitalWrite(DOOR_PIN, LOW);
+    }
+}
+
 void setup()
 {
     gs8_CommandBuffer[0] = 0;
 
     Utils::SetPinMode(DOOR_PIN, OUTPUT);
     Utils::WritePin  (DOOR_PIN, LOW);
+
+    Utils::SetPinMode(BUZZ_SENSE, INPUT);
 
     Utils::SetPinMode(CHARGE_PIN, OUTPUT);
     Utils::WritePin  (CHARGE_PIN, LOW);
@@ -743,6 +756,9 @@ void setup()
 
     // Enable DCF receiver
     DCF.Start();
+
+    // Enable buzzer pass through
+    attachInterrupt(BUZZ_SENSE, handleBuzzer, CHANGE);
 
     // A longer pause is required to assure that the condensator at VOLTAGE_MEASURE_PIN
     // has been charged before the battery voltage is measured for the first time.

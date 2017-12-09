@@ -324,8 +324,6 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
     // Initialize interface
     intf.init();
     delay(10);
-    intf.led(1, true);
-    intf.configureSpi(0b01010000, 0b01110010);
 
     MFRC522Logger.setLevel(DEBUG);
 
