@@ -83,9 +83,7 @@
 // The shorter this interval, the more power is consumed by the reader.
 // The longer  this interval, the longer the user has to wait until the door opens.
 // The recommended interval is 1000 ms.
-// Please note that the slowness of reading a Desfire card is not caused by this interval.
-// The SPI bus speed is throttled to 10 kHz, which allows to transmit the data over a long cable, but this obviously makes reading the card slower.
-#define RF_OFF_INTERVAL  1000
+#define RF_OFF_INTERVAL  500
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN BLUE_LED
@@ -797,7 +795,7 @@ void loop()
     if (DCFtime != 0)
     {
         setTime(DCFtime);
-        FlashLED(LED_GREEN, 250);
+        FlashLED(LED_GREEN, 200);
     }
 
     static uint64_t u64_LastRead = 0;

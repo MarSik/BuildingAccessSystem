@@ -175,7 +175,7 @@ int main(void) {
 
     // Configure SysTick reload value
     // (X-1 see http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0662b/BGBEEJHC.html)
-    SysTick->LOAD = 200000 - 1; // 500us (200 000 cycles at 40Mhz)
+    SysTick->LOAD = 5000 - 1; // 125us (5000 cycles at 40Mhz)
     SysTick->CTRL = 0;
 
     GPIOA->PTOR = PTC2 | PTC3; // toggle outputs off

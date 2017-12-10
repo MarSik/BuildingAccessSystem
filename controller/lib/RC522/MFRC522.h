@@ -308,7 +308,7 @@ MFRC522(T & intf, byte resetPowerDownPin):intf(intf),
       // Set the resetPowerDownPin as digital output, do not reset or power down.
       digitalWrite(_powerEnable, HIGH); // The MFRC522 chip is in power down mode.
       MFRC522Logger.println(DEBUG, "HW Reset!");
-      delay(20);
+      delay(100);
       digitalWrite(_powerEnable, LOW);	// Exit power down mode. This triggers a hard reset.
       MFRC522Logger.println(DEBUG, "Wait for boot after HW Reset!");
       delay(200);
