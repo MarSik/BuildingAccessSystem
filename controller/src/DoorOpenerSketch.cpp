@@ -429,7 +429,7 @@ void AddCardToEeprom()
         return;
     }
 
-    if (cardManager.check_valid()) {
+    if (cardManager.read_signature().valid) {
         Utils::Print("Card already personalized in the past", LF);
     }
 
@@ -604,6 +604,17 @@ void OnCommandReceived(bool b_PasswordValid)
 
         if (strcasecmp(gs8_CommandBuffer, "RESTORE") == 0)
         {
+            uint64_t cardId;
+            Utils::Print("Waiting for card...", LF);
+            if (!WaitForCard(&cardId))
+                return;
+
+            if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+                Utils::Print("Authentication to card succeeded", LF);
+            } else {
+                Utils::Print("Authentication to card failed", LF);
+            }
+
             if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
             else                          Utils::Print("Restore failed\r\n");
             mfrc522.PCD_AntennaOff();
@@ -833,13 +844,34 @@ void loop()
               Utils::Print("Card successfully authenticated!", LF);
             }
 
-            if (!cardManager.check_valid()) {
+            const CardInfo &signature = cardManager.read_signature();
+            if (!signature.valid) {
                 Utils::Print("Card not configured for this application.", LF);
                 break;
             }
 
-            // TODO check blacklist
-            // TODO decode permissions
+            if (signature.special_app & CardInfo::ACCESS_BT) {
+                // TODO Enable bluetooth pairing until timeout
+            }
+
+            AccessRule rule;
+            if (!cardManager.get_rule(DOOR_ID, rule)) {
+                Utils::Print("Door rule not accessible.", LF);
+                break;
+            }
+
+            if (!rule.check_crc()) {
+                Utils::Print("Door rule corrupted.", LF);
+                break;
+            }
+
+            const time_t _now = now();
+
+            if (!rule.check_access(weekday(_now), hour(_now))) {
+                Utils::Print("Card is not allowed to access this door.", LF);
+                break;
+            }
+
             Utils::Print("> ");
         } else {
             gu64_LastID = 0;

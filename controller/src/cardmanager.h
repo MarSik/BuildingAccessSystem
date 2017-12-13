@@ -24,12 +24,21 @@ enum DayOfWeek {
     SUN = 1 << 0
 };
 
+struct CardInfo {
+    bool valid;
+    uint8_t flat;
+    uint8_t cardno;
+    uint8_t special_app;
+
+    static const uint8_t ACCESS_BT = 0b10000000;
+};
+
 struct AccessRule {
     DefaultRule default_rule : 1;
-    int dow : 7;
-    int hour : 8;
-    int _reserved : 8;
-    int crc : 8;
+    unsigned int dow : 7;
+    unsigned int hour : 8;
+    unsigned int _reserved : 12;
+    unsigned int crc : 4; // 0x5a xor all four bytes (with crc = 0x0) and then high nibble xor low nibble
 
     void set_default(const DefaultRule rule) { default_rule = rule; }
 
@@ -39,13 +48,16 @@ struct AccessRule {
     void remove_day(const uint8_t dow) { this->dow &= ~dow; }
     void remove_hour(const uint8_t hour) { this->hour &= ~(1 << (hour / 3)); }
 
-    uint32_t serialize() const;
-    bool deserialize(const uint32_t value);
+    bool check_access(const uint8_t dow, const uint8_t hour) const;
 
-    const static uint8_t CHECKSUM_BASE = 0x55;
-private:
-    uint8_t compute_crc();
+    void serialize(uint8_t buffer[4]) const;
+    bool deserialize(const uint8_t value[4]);
+
     bool check_crc() const;
+
+private:
+    uint8_t compute_crc() const;
+    const static uint8_t CHECKSUM_BASE = 0x5a;
 };
 
 template <typename Pcd>
@@ -59,7 +71,7 @@ public:
      * @return
      */
     bool personalize_card() const;
-    bool reset_card() const { return false; }
+    bool reset_card() const;
 
     /**
      * @brief set_rule changes the rule for the resource that is stored on the card
@@ -67,13 +79,21 @@ public:
      * @param rule
      * @return
      */
-    bool set_rule(const uint8_t door, const AccessRule rule) const;
+    bool set_rule(const uint8_t door, const AccessRule &rule) const;
+
+    /**
+     * Read the access rule for specified door
+     * @param door door id
+     * @param rule AccessRule structure to fill
+     * @return true if the get succeeded
+     */
+    bool get_rule(const uint8_t door, AccessRule &rule) const;
 
     /**
      * @brief check_valid makes sure the card is configured for the application
      * @return true or false
      */
-    bool check_valid() const;
+    const CardInfo read_signature() const;
 
     /**
      * @brief authorize make sure the card is authorized to access the resource
@@ -84,11 +104,21 @@ public:
      */
     bool authorize(const uint8_t dow, const uint8_t hour, const uint8_t door) const { return false; }
 
+    const uint8_t ALL = 0xff;
+
 protected:
     const uint32_t APPID = APPLICATION_ID;
-    const uint8_t APPID_PAGE = 0x04;
+    static const uint8_t APPID_PAGE = 0x04;
 
-    etl::array<const uint8_t, 4> DOORS = {{ 0x05, 0x06, 0x07, 0x08 }}; // double braces to workaround GCC bug 65815
+    const etl::array<const uint8_t, 4> DOORS = {{ 0x06, 0x07, 0x08, 0x09 }}; // double braces to workaround GCC bug 65815
+
+    static const uint8_t FLAT_ID_PAGE = 0x05;
+    static const uint8_t FLAT_ID_BYTE = 0;
+    static const uint8_t FLAT_CHIP_ID_BYTE = 1;
+
+    static const uint8_t SPECIAL_PAGE = 0x05;
+    static const uint8_t SPECIAL_APP_ACCESS_BYTE = 2;
+    static const uint8_t SPECIAL_RESERVED_BYTE = 3;
 
 private:
     MFRC522Ultralight<Pcd> &pcd;
@@ -97,24 +127,54 @@ private:
 template <typename Pcd>
 bool CardManager<Pcd>::personalize_card() const
 {
-    const byte buff[4] = {0x00, 0x00, 0x00, AccessRule::CHECKSUM_BASE}; // Forbid access, no conditions
+    // Forbid access, no conditions
+    const byte buff[4] = {0x00, 0x00, 0x00, 0x5 ^ 0xA};
 
     pcd.UltralightC_SetAuthProtection(0x3);
+    pcd.UltralightC_ChangeKey(APPLICATION_KEY);
+
     pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[0], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[1], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[2], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[3], buff, 4);
+
+    const byte special[4] = {0x18, 0x01, 0x80, 0x00};
+    pcd.MIFARE_Ultralight_Write(FLAT_ID_PAGE, special, 4);
+
     return true; // TODO
 }
 
+template <typename Pcd>
+bool CardManager<Pcd>::reset_card() const {
+    const byte buff[4] = {0x00, 0x00, 0x00, 0x00};
+
+    StatusCode code;
+
+    // Set default code
+    code = pcd.UltralightC_ChangeKey(DEFAULT_UL_KEY);
+    if (code != STATUS_OK) {
+        return code;
+    }
+
+    // Clear application ID
+    code = pcd.MIFARE_Ultralight_Write(APPID_PAGE, buff, 4);
+    if (code != STATUS_OK) {
+        return code;
+    }
+
+    // Remove write protection
+    code = pcd.UltralightC_SetAuthProtection(0x30);
+    return code == STATUS_OK;
+}
+
 template<typename Pcd>
-bool CardManager<Pcd>::check_valid() const {
+const CardInfo CardManager<Pcd>::read_signature() const {
     byte buffer[18] = {0, };
     byte bufferLen = 18;
     StatusCode status = pcd.MIFARE_Read(APPID_PAGE, buffer, &bufferLen);
     if (status != STATUS_OK) {
-        return false;
+        return {false, 0, 0, 0};
     }
 
     // buffer bytes 0-3 contain little endian uint32_t app id (byte 0 is LSB)
@@ -123,7 +183,31 @@ bool CardManager<Pcd>::check_valid() const {
     receivedAppId = (receivedAppId << 8) | buffer[1];
     receivedAppId = (receivedAppId << 8) | buffer[0];
 
-    return receivedAppId == APPID;
+    return {receivedAppId == APPID,
+            buffer[4], buffer[5], buffer[6]};
+}
+
+template <typename Pcd>
+bool CardManager<Pcd>::get_rule(const uint8_t door, AccessRule &rule) const {
+    byte buffer[18] = {0, };
+    byte bufferLen = 18;
+    StatusCode status = pcd.MIFARE_Read(DOORS[door], buffer, &bufferLen);
+    if (status != STATUS_OK) {
+        return false;
+    }
+
+    // buffer bytes 0-3 contain little endian uint32_t app id (byte 0 is LSB)
+    rule.deserialize(buffer);
+    return true;
+}
+
+template <typename Pcd>
+bool CardManager<Pcd>::set_rule(const uint8_t door, const AccessRule &rule) const {
+    uint8_t buffer[4];
+    rule.serialize(buffer);
+
+    StatusCode result = pcd.MIFARE_Ultralight_Write(DOORS[door], buffer, 4);
+    return result == STATUS_OK;
 }
 
 #endif // CARDMANAGER_H
