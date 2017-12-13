@@ -128,7 +128,7 @@ template <typename Pcd>
 bool CardManager<Pcd>::personalize_card() const
 {
     // Forbid access, no conditions
-    const byte buff[4] = {0x00, 0x00, 0x00, 0x5 ^ 0xA};
+    const byte buff[4] = {0x00, 0x00, 0x00, 0x0a ^ 0x05};
 
     pcd.UltralightC_SetAuthProtection(0x3);
     pcd.UltralightC_ChangeKey(APPLICATION_KEY);
