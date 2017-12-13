@@ -837,7 +837,7 @@ void loop()
         {
             if (!mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
             {
-                FlashLED(LED_RED, 1000);
+                FlashLED(LED_RED, 500);
                 Utils::Print("Card authentication failed!", LF);
                 break;
             } else {
@@ -847,6 +847,7 @@ void loop()
             const CardInfo &signature = cardManager.read_signature();
             if (!signature.valid) {
                 Utils::Print("Card not configured for this application.", LF);
+                FlashLED(LED_RED, 500);
                 break;
             }
 
@@ -857,11 +858,13 @@ void loop()
             AccessRule rule;
             if (!cardManager.get_rule(DOOR_ID, rule)) {
                 Utils::Print("Door rule not accessible.", LF);
+                FlashLED(LED_RED, 500);
                 break;
             }
 
             if (!rule.check_crc()) {
                 Utils::Print("Door rule corrupted.", LF);
+                FlashLED(LED_RED, 500);
                 break;
             }
 
@@ -869,6 +872,7 @@ void loop()
 
             if (!rule.check_access(weekday(_now), hour(_now))) {
                 Utils::Print("Card is not allowed to access this door.", LF);
+                FlashLED(LED_RED, 500);
                 break;
             }
 
