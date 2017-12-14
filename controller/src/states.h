@@ -8,6 +8,7 @@
 #include "countdown.h"
 #include "cardmanager.h"
 #include "Utils.h"
+#include "config.h"
 
 extern MFRC522IntfSpiOver485 mfrcIntf;
 extern MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522;
@@ -17,6 +18,7 @@ extern CardManager<MFRC522IntfSpiOver485> cardManager;
 void InitReader(bool b_ShowError);
 bool ReadCard(uint64_t* uid);
 extern bool gb_InitSuccess;
+void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick);
 
 // Events
 struct CountdownFinished : public tinyfsm::Event {};
@@ -115,12 +117,14 @@ class AccessDenied : public AccessSystem {
 class AccessAllowed : public AccessSystem {
 	virtual void entry(void) override {
 		// TODO turn on OK LED + door
+        Utils::WritePin(DOOR_PIN, HIGH);
 		countdown(1000);
 	};
 
 	virtual void react(CountdownFinished const &) override {
 		// TODO turn off OK LED + door
-		transit<ReaderOk>();
+        Utils::WritePin(DOOR_PIN, LOW);
+        transit<ReaderOk>();
 	};
 };
 
