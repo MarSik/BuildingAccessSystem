@@ -5,7 +5,7 @@ PROJECT(project)
 # Set used CPU and source list
 SET(CPU cortex-m4)
 SET(F_CPU 80000000)
-SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp)
+SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/countdown.h)
 
 # Precompile Arduino framework
 FIND_PACKAGE(Arduino COMPONENTS tivac EK-TM4C123GXL)
@@ -28,6 +28,7 @@ USE(DCF77 ${PROJECT_NAME})
 USE(RC522 ${PROJECT_NAME})
 USE(embdlog ${PROJECT_NAME})
 USE(etl ${PROJECT_NAME})
+USE("tinyfsm-0.2.0" ${PROJECT_NAME})
 
 # Project specific toolchain initialization
 INCLUDE(${TOOLCHAIN_INIT})

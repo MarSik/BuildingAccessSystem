@@ -127,13 +127,14 @@ private:
 template <typename Pcd>
 bool CardManager<Pcd>::personalize_card() const
 {
-    // Forbid access, no conditions
-    const byte buff[4] = {0x00, 0x00, 0x00, 0x0a ^ 0x05};
+    // Allow access, no conditions
+    const byte buff[4] = {0xFF, 0xFF, 0x00, 0x0a ^ 0x05};
+
+    pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
 
     pcd.UltralightC_SetAuthProtection(0x3);
     pcd.UltralightC_ChangeKey(APPLICATION_KEY);
 
-    pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[0], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[1], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[2], buff, 4);

@@ -106,6 +106,8 @@
 #include "Utils.h"
 #include "Secrets.h"
 #include "cardmanager.h"
+#include "states.h"
+#include "countdown.h"
 
 DCF77 DCF = DCF77(DCF77_PIN, DCF77_PIN);
 
@@ -334,7 +336,7 @@ void InitReader(bool b_ShowError)
         if (!mfrc522.PCD_Init()) return;		// Init MFRC522
         Serial.println("Getting reader info..");
         mfrc522.PCD_DumpVersionToSerial(Serial);	// Show details of PCD - MFRC522 Card Reader details
-        Serial.println("Setting gain to maximum");
+        Serial.println("Setting gain");
         mfrc522.PCD_SetAntennaGain(PCD_RxGain::RxGain_avg);
         if (!mfrc522.PCD_WriteRegister(PCD_Register::RxThresholdReg, 0x22)) return;
         Serial.println(F("Reader initialized."));
@@ -431,11 +433,6 @@ void AddCardToEeprom()
 
     if (cardManager.read_signature().valid) {
         Utils::Print("Card already personalized in the past", LF);
-    }
-
-    if (mfrc522.UltralightC_ChangeKey(APPLICATION_KEY) != STATUS_OK) {
-      Utils::Print("Application key could not be set", LF);
-      return;
     }
 
     cardManager.personalize_card();
@@ -731,8 +728,12 @@ bool ReadKeyboardInput()
     return b_KeyPress;
 }
 
+volatile bool _buzzerActivated = false;
+
 void handleBuzzer(void) {
     const int val = digitalRead(BUZZ_SENSE);
+    _buzzerActivated = val == LOW;
+
     if (val == LOW) {
         digitalWrite(DOOR_PIN, HIGH);
     } else {
@@ -783,6 +784,12 @@ void setup()
     // Use the internal reference voltage (1.5V) as analog reference
     // analogReference(INTERNAL1V5); // TODO recompute the rest of the code to the proper Tiva references
 
+    // Initialize countdown timer
+    initializeCountdown();
+
+    // Initialize the access system FSM
+    AccessSystem::initialize();
+
     InitReader(false);
 }
 
@@ -800,6 +807,27 @@ void loop()
     bool b_KeyPress  = ReadKeyboardInput();
     bool b_VoltageOK = CheckBattery();
 
+    // Countdown finished state machine transition
+    if (countdownFinished()) {
+        AccessSystem::dispatch(CountdownFinished{});
+    }
+
+    // User is typing
+    if (b_KeyPress) {
+        AccessSystem::dispatch(UserTyping{});
+    }
+
+    // Battery voltage outside limits
+    if (!b_VoltageOK) {
+        AccessSystem::dispatch(BatteryBad{});
+    }
+
+    if (_buzzerActivated) {
+        AccessSystem::dispatch(BuzzerActivated{});
+    } else {
+        AccessSystem::dispatch(BuzzerReleased{});
+    }
+
     uint64_t u64_StartTick = Utils::GetMillis64();
 
     time_t DCFtime = DCF.getTime(); // Check if new DCF77 time is available
@@ -807,104 +835,9 @@ void loop()
     {
         setTime(DCFtime);
         FlashLED(LED_GREEN, 200);
+        AccessSystem::dispatch(DCFReceived{});
     }
 
-    static uint64_t u64_LastRead = 0;
-    if (gb_InitSuccess)
-    {
-        // While the user is typing do not read the card to avoid delays and debug output.
-        if (b_KeyPress)
-        {
-            u64_LastRead = u64_StartTick + 1000; // Give the user 1000 ms + RF_OFF_INTERVAL between each character
-            return;
-        }
-
-        // Turn on the RF field for 100 ms then turn it off for one second (RF_OFF_INTERVAL) to save battery
-        if ((int)(u64_StartTick - u64_LastRead) < RF_OFF_INTERVAL)
-            return;
-    }
-
-    do // pseudo loop (just used for aborting with break;)
-    {
-        if (!gb_InitSuccess)
-        {
-            InitReader(true); // flash red LED for 2.4 seconds
-            break;
-        }
-
-        uint64_t uid;
-        if (ReadCard(&uid))
-        {
-            if (!mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
-            {
-                FlashLED(LED_RED, 500);
-                Utils::Print("Card authentication failed!", LF);
-                break;
-            } else {
-              Utils::Print("Card successfully authenticated!", LF);
-            }
-
-            const CardInfo &signature = cardManager.read_signature();
-            if (!signature.valid) {
-                Utils::Print("Card not configured for this application.", LF);
-                FlashLED(LED_RED, 500);
-                break;
-            }
-
-            if (signature.special_app & CardInfo::ACCESS_BT) {
-                // TODO Enable bluetooth pairing until timeout
-            }
-
-            AccessRule rule;
-            if (!cardManager.get_rule(DOOR_ID, rule)) {
-                Utils::Print("Door rule not accessible.", LF);
-                FlashLED(LED_RED, 500);
-                break;
-            }
-
-            if (!rule.check_crc()) {
-                Utils::Print("Door rule corrupted.", LF);
-                FlashLED(LED_RED, 500);
-                break;
-            }
-
-            const time_t _now = now();
-
-            if (!rule.check_access(weekday(_now), hour(_now))) {
-                Utils::Print("Card is not allowed to access this door.", LF);
-                FlashLED(LED_RED, 500);
-                break;
-            }
-
-            Utils::Print("> ");
-        } else {
-            gu64_LastID = 0;
-
-            // Flash the green LED shortly. On Power Failure flash the red LED shortly.
-            FlashLED(b_VoltageOK ? LED_GREEN : LED_RED, 20);
-            break;
-        }
-
-        // Still the same card present
-        if (gu64_LastID == uid) {
-            Utils::PrintHex32(gu64_LastID);
-            Utils::Print(" == ");
-            Utils::PrintHex32(uid);
-            Utils::Print(" the same card, ignoring..", LF);
-            break;
-        }
-
-        // A different card was found in the RF field
-        // OpenDoor() needs the RF field to be ON (for CheckDesfireSecret())
-      	OpenDoor(&uid, u64_StartTick);
-        Utils::Print("> ");
-    }
-    while (false);
-
-    // Turn off the RF field to save battery
-    // When the RF field is on,  the reader board consumes approx 110 mA.
-    // When the RF field is off, the reader board consumes approx 18 mA.
-    mfrc522.PCD_AntennaOff();
-
-    u64_LastRead = Utils::GetMillis64();
+    // Systick interrupt will cancel the sleep early as will buzzer
+    sleep(1000);
 }
