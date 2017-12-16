@@ -133,6 +133,8 @@ bool CardManager<Pcd>::personalize_card() const
     pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
 
     pcd.UltralightC_SetAuthProtection(0x3);
+
+    // TODO compute per-card key from app key and uid
     pcd.UltralightC_ChangeKey(APPLICATION_KEY);
 
     pcd.MIFARE_Ultralight_Write(DOORS[0], buff, 4);

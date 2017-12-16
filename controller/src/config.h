@@ -8,6 +8,11 @@
 // The interval of inactivity in minutes after which the password must be entered again (automatic log-off)
 #define PASSWORD_TIMEOUT  5
 
+// The tick counter starts at zero when the CPU is reset.
+// This interval is added to the 64 bit tick count to get a value that does not start at zero,
+// because gu64_LastPasswd is initialized with 0 and must always be in the past.
+#define PASSWORD_OFFSET_MS   (2 * PASSWORD_TIMEOUT * 60 * 1000)
+
 // This Arduino / Teensy pin is connected to the relay that opens the door 1
 #define DOOR_PIN       PA_6
 // Sensing whether someone is pushing the door open button

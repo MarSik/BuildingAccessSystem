@@ -4,4 +4,5 @@
 .gcc-flags.json
 build-*
 Toolchain-*
+cmake-build-*
 

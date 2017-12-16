@@ -9,6 +9,7 @@
 #include "cardmanager.h"
 #include "Utils.h"
 #include "config.h"
+#include "hal.h"
 
 extern MFRC522IntfSpiOver485 mfrcIntf;
 extern MFRC522Ultralight<MFRC522IntfSpiOver485> mfrc522;
@@ -19,17 +20,20 @@ void InitReader(bool b_ShowError);
 bool ReadCard(uint64_t* uid);
 extern bool gb_InitSuccess;
 void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick);
+bool ReadKeyboardInput();
 
 // Events
 struct CountdownFinished : public tinyfsm::Event {};
 struct UserTyping : public tinyfsm::Event {};
 struct BatteryBad : public tinyfsm::Event {};
 struct DCFReceived : public tinyfsm::Event {};
-struct CardClose : public tinyfsm::Event {};
 struct AddCard : public tinyfsm::Event {};
+struct TestCard : public tinyfsm::Event {};
 struct ClearCard : public tinyfsm::Event {};
 struct BuzzerActivated : public tinyfsm::Event {};
 struct BuzzerReleased : public tinyfsm::Event {};
+struct PasswordEntered : public tinyfsm::Event {};
+struct BadPasswordEntered : public tinyfsm::Event {};
 
 struct AccessSystem : public tinyfsm::Fsm<AccessSystem> {
 public:
@@ -40,6 +44,11 @@ public:
     virtual void react(UserTyping const &) {}
     virtual void react(BatteryBad const &) {}
     virtual void react(DCFReceived const &) {}
+    virtual void react(BadPasswordEntered const &) {}
+    virtual void react(PasswordEntered const &) {}
+    virtual void react(AddCard const &) {}
+    virtual void react(ClearCard const &) {}
+    virtual void react(TestCard const &) {}
 
 	virtual void entry(void) {};  /* entry actions in some states */
 	virtual void exit(void) {};  /* exit actions */
@@ -47,6 +56,146 @@ public:
 
 class CheckCard;
 class ReaderOk;
+class ShellInUse;
+class ReaderError;
+
+class WaitForYesNo : public AccessSystem {
+    virtual void yes() = 0;
+    virtual void no() = 0;
+    virtual void nothing() = 0;
+
+    virtual void entry(void) override {
+        countdown(30000);
+    };
+
+    virtual void react(UserTyping const &) override {
+        const int ch = Serial.read();
+        switch (ch) {
+            case 'n':
+            case 'N':
+                no();
+                break;
+            case 'y':
+            case 'Y':
+            case 'a':
+            case 'A':
+                yes();
+                break;
+            default:
+                break;
+        }
+    };
+
+    virtual void react(CountdownFinished const &) override {
+        nothing();
+    }
+};
+
+class WaitForCard : public AccessSystem {
+    static const uint16_t MAX_ATTEMPTS = 300; // 30 sec total
+    static uint16_t attempts;
+
+    virtual void noCardFound() = 0;
+    virtual void cardFound(uint64_t &uid) = 0;
+
+    virtual void entry(void) override {
+        attempts = 0;
+        Utils::Print("Please approximate the card to the reader now!\r\nYou have 30 seconds. Abort with ESC.\r\n");
+        countdown(100);
+    };
+
+    virtual void react(UserTyping const &) override {
+        if (Serial.read() == 27) { // ESC
+            Utils::Print("Aborted.\r\n");
+            noCardFound();
+        }
+    };
+
+    virtual void react(CountdownFinished const &) override {
+        uint64_t uid;
+        if (ReadCard(&uid)) {
+            Utils::Print("Card found.\r\n");
+            cardFound(uid);
+        } else if (!gb_InitSuccess) {
+            Utils::Print("Reader connection failed.\r\n");
+            transit<ReaderError>();
+        } else if (++attempts > MAX_ATTEMPTS) {
+            Utils::Print("Timeout waiting for card.\r\n");
+            noCardFound();
+        } else {
+            SetLED(attempts % 4 ? LED_OFF : LED_GREEN);
+            countdown(200);
+        }
+    };
+
+    void exit() override {
+        SetLED(LED_OFF);
+        mfrc522.PCD_AntennaOff();
+    }
+};
+
+class ShellTestCard : public WaitForCard {
+    void noCardFound() override {
+        transit<ShellInUse>();
+    }
+
+    void cardFound(uint64_t &uid) override {
+        // TODO compute per-card key from app key and uid
+        if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+            Utils::Print("Authentication to card succeeded", LF);
+        } else {
+            Utils::Print("Authentication to card failed", LF);
+        }
+        transit<ShellInUse>();
+    }
+};
+
+class RestoreCard : public WaitForCard {
+    void noCardFound() override {
+        transit<ShellInUse>();
+    }
+
+    void cardFound(uint64_t &uid) override {
+        // TODO compute per-card key from app key and uid
+        if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+            Utils::Print("Authentication to card succeeded", LF);
+        } else {
+            Utils::Print("Authentication to card failed", LF);
+        }
+
+        if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
+        else                          Utils::Print("Restore failed\r\n");
+
+        transit<ShellInUse>();
+    }
+};
+
+class PersonalizeCard : public WaitForCard {
+    void noCardFound() override {
+        transit<ShellInUse>();
+    }
+
+    void cardFound(uint64_t &uid) override {
+        if (cardManager.personalize_card()) {
+            Utils::Print("Card configured for access", LF);
+        } else {
+            Utils::Print("Card configuration failed", LF);
+        }
+        transit<ShellInUse>();
+    }
+};
+
+class BadPasswordDelay : public AccessSystem {
+    virtual void entry(void) override {
+        SetLED(LED_RED);
+        countdown(1000);
+    };
+
+    virtual void react(CountdownFinished const &) override {
+        SetLED(LED_OFF);
+        transit<ShellInUse>();
+    };
+};
 
 class ShellInUse : public AccessSystem {
 	virtual void entry(void) override {
@@ -55,16 +204,36 @@ class ShellInUse : public AccessSystem {
 
 	virtual void react(UserTyping const &) override {
 		countdown(1000);
+		ReadKeyboardInput();
 	};
 
 	virtual void react(CountdownFinished const &) override {
 		transit<ReaderOk>();
 	};
+
+    virtual void react(BadPasswordEntered const &) override {
+        transit<BadPasswordDelay>();
+    };
+
+    virtual void react(ClearCard const &) override {
+        transit<RestoreCard>();
+    };
+
+    virtual void react(AddCard const &) override {
+        transit<PersonalizeCard>();
+    };
+
+    virtual void react(TestCard const &) override {
+        transit<ShellTestCard>();
+    };
+
+    virtual void exit() {
+    }
 };
 
 class ReaderOk : public AccessSystem {
 	virtual void entry(void) override {
-		countdown(500);
+		countdown(250);
 	}
 
 	virtual void react(UserTyping const &) override {
@@ -82,12 +251,12 @@ class ReaderInitialize;
 
 class ReaderError : public AccessSystem {
 	virtual void entry(void) override {
-		// TODO turn on error LED
+        SetLED(LED_RED);
 		countdown(1000);
 	};
 
 	virtual void react(CountdownFinished const &) override {
-		// TODO turn off error LED
+        SetLED(LED_OFF);
 		transit<ReaderErrorWait>();
 	};
 };
@@ -104,41 +273,51 @@ class ReaderErrorWait : public AccessSystem {
 
 class AccessDenied : public AccessSystem {
 	virtual void entry(void) override {
-		// TODO turn on error LED
+        SetLED(LED_RED);
 		countdown(1000);
 	};
 
 	virtual void react(CountdownFinished const &) override {
-		// TODO turn off error LED
+        SetLED(LED_OFF);
 		transit<ReaderOk>();
 	};
 };
 
 class AccessAllowed : public AccessSystem {
 	virtual void entry(void) override {
-		// TODO turn on OK LED + door
+        Utils::Print("Opening door!\r\n");
+        SetLED(LED_GREEN);
         Utils::WritePin(DOOR_PIN, HIGH);
 		countdown(1000);
 	};
 
 	virtual void react(CountdownFinished const &) override {
-		// TODO turn off OK LED + door
-        Utils::WritePin(DOOR_PIN, LOW);
         transit<ReaderOk>();
 	};
+
+    virtual void exit() {
+        Utils::Print("Closing door!\r\n");
+        Utils::WritePin(DOOR_PIN, LOW);
+        SetLED(LED_OFF);
+    }
 };
 
 class CheckCard : public AccessSystem {
 public:
 	virtual void entry(void) override {
-		uint64_t uid;
-		bool oneGoodCard = false;
-		bool oneCard = false;
+		uint64_t uid = 0;
+        uint64_t lastUid = 0;
+		bool cardGood = false;
+		bool cardPresent = false;
 
 		// There might be more than one card in the field
 		// Halt all cards that do not match and try again
-		while (!oneGoodCard && ReadCard(&uid)) {
-			oneCard = true;
+        // Also stop checking if the same card is read twice
+		while (ReadCard(&uid) && uid != lastUid) {
+            lastUid = uid;
+			cardPresent = true;
+
+            // TODO compute per-card key from app key and uid
 
 			if (!mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
 			{
@@ -181,14 +360,15 @@ public:
 				continue;
 			}
 
-			oneGoodCard = true;
+			cardGood = true;
+            break;
 		}
 
 		if (!gb_InitSuccess) {
 			transit<ReaderError>();
-		} else if (oneGoodCard) {
+		} else if (cardGood) {
 			transit<AccessAllowed>();
-		} else if (oneCard) {
+		} else if (cardPresent) {
 			transit<AccessDenied>();
 		} else {
 			transit<ReaderOk>();
@@ -202,6 +382,14 @@ public:
 
 class ReaderInitialize : public AccessSystem {
 	virtual void entry(void) override {
+        // A longer pause is required to assure that the condensator at VOLTAGE_MEASURE_PIN
+        // has been charged before the battery voltage is measured for the first time.
+        SetLED(LED_GREEN);
+        Utils::WritePin(DOOR_PIN, LOW);
+        countdown(1000);
+    }
+
+    virtual void react(CountdownFinished const &) override {
 		// Initialize and move to proper state
 		InitReader(false);
 		if (gb_InitSuccess) {
@@ -210,6 +398,10 @@ class ReaderInitialize : public AccessSystem {
 			transit<ReaderError>();
 		}
 	}
+
+    virtual void exit() {
+        SetLED(LED_OFF);
+    }
 };
 
 #endif

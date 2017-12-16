@@ -5,7 +5,7 @@ PROJECT(project)
 # Set used CPU and source list
 SET(CPU cortex-m4)
 SET(F_CPU 80000000)
-SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/countdown.h)
+SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/countdown.h src/keyboard.cpp src/keyboard.h src/hal.cpp src/hal.h)
 
 # Precompile Arduino framework
 FIND_PACKAGE(Arduino COMPONENTS tivac EK-TM4C123GXL)
