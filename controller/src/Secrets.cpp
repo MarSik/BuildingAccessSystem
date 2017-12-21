@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <driverlib/eeprom.h>
 #include "Secrets.h"
 
 // This reader is used to open door group no. 1
@@ -23,3 +24,36 @@ byte APPLICATION_KEY[16] = {'I', 'E', 'M', 'K', 'A', 'E', 'R', 'B', '!', 'N', 'A
 //   = 0000 0111 0011 1101 0110 1010 0001 1000
 //   = Ox073D6A18
 const uint32_t APPLICATION_ID = 0x073D6A18; // 0OPLK18
+
+void loadApplicationKeyFromEEPROM() {
+    uint32_t candidate[5];
+    EEPROMRead(candidate, 0, 20);
+    if ((0x55555555 ^ candidate[0] ^ candidate[1] ^ candidate[2] ^ candidate[3]) == candidate[4]) {
+        Serial.write("Successfully restored application key.\r\n");
+        memcpy(APPLICATION_KEY, candidate, 16);
+    } else {
+        Serial.write("Invalid application key - using the default one!!!\r\n");
+    }
+}
+
+void setApplicationKey(const byte newKey[16]) {
+    uint32_t candidate[5];
+    memcpy(candidate, newKey, 16);
+    candidate[4] = 0x55555555 ^ candidate[0] ^ candidate[1] ^ candidate[2] ^ candidate[3];
+    if (!EEPROMProgram(candidate, 0, 20)) {
+        Serial.write("New application key set.\r\n");
+        memcpy(APPLICATION_KEY, newKey, 16);
+    } else {
+        Serial.write("Failed to set new application key.\r\n");
+    }
+}
+
+void clearApplicationKey() {
+    uint32_t candidate[5] = {0, 0, 0, 0, 0};
+    if (!EEPROMProgram(candidate, 0, 5)) {
+        Serial.write("Application key cleared.\r\n");
+        memcpy(APPLICATION_KEY, DEFAULT_UL_KEY, 16);
+    } else {
+        Serial.write("Failed to clear the application key.\r\n");
+    }
+}

@@ -8,10 +8,6 @@
 #ifndef SECRETS_H
 #define SECRETS_H
 
-#include <Arduino.h>
-#undef min
-#undef max
-
 // This reader is used to open door group no. 1
 extern byte DOOR_ID;
 
@@ -34,5 +30,9 @@ extern byte APPLICATION_KEY[16];
 //   = 0000 0111 0011 1101 0110 1010 0001 1000
 //   = Ox073D6A18
 extern const uint32_t APPLICATION_ID;
+
+void loadApplicationKeyFromEEPROM();
+void setApplicationKey(const byte newKey[16]);
+void clearApplicationKey();
 
 #endif

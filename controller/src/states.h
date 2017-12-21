@@ -19,7 +19,6 @@ extern CardManager<MFRC522IntfSpiOver485> cardManager;
 void InitReader(bool b_ShowError);
 bool ReadCard(uint64_t* uid);
 extern bool gb_InitSuccess;
-void OpenDoor(uint64_t* cardId, uint64_t u64_StartTick);
 bool ReadKeyboardInput();
 
 // Events
@@ -34,6 +33,7 @@ struct BuzzerActivated : public tinyfsm::Event {};
 struct BuzzerReleased : public tinyfsm::Event {};
 struct PasswordEntered : public tinyfsm::Event {};
 struct BadPasswordEntered : public tinyfsm::Event {};
+struct ClearAppKeyRequest : public tinyfsm::Event {};
 
 struct AccessSystem : public tinyfsm::Fsm<AccessSystem> {
 public:
@@ -49,6 +49,7 @@ public:
     virtual void react(AddCard const &) {}
     virtual void react(ClearCard const &) {}
     virtual void react(TestCard const &) {}
+    virtual void react(ClearAppKeyRequest const &) {}
 
 	virtual void entry(void) {};  /* entry actions in some states */
 	virtual void exit(void) {};  /* exit actions */
@@ -65,6 +66,8 @@ class WaitForYesNo : public AccessSystem {
     virtual void nothing() = 0;
 
     virtual void entry(void) override {
+        Serial.write("Please confirm the action. Press Y if you really want it. N otherwise.\r\n"
+                     "Default is No. You have 30 seconds.\r\n");
         countdown(30000);
     };
 
@@ -73,6 +76,8 @@ class WaitForYesNo : public AccessSystem {
         switch (ch) {
             case 'n':
             case 'N':
+            case '\n':
+            case 27: // ESC
                 no();
                 break;
             case 'y':
@@ -88,6 +93,23 @@ class WaitForYesNo : public AccessSystem {
 
     virtual void react(CountdownFinished const &) override {
         nothing();
+    }
+};
+
+class ReallyClearAppKey: public WaitForYesNo {
+    virtual void yes() {
+        clearApplicationKey();
+        transit<ShellInUse>();
+    }
+
+    virtual void no() {
+        Serial.print("Aborting.\r\n");
+        transit<ShellInUse>();
+    }
+
+    virtual void nothing() {
+        Serial.print("Timeout while waiting for answer. Aborting.\r\n");
+        transit<ShellInUse>();
     }
 };
 
@@ -226,6 +248,10 @@ class ShellInUse : public AccessSystem {
     virtual void react(TestCard const &) override {
         transit<ShellTestCard>();
     };
+
+    virtual void react(ClearAppKeyRequest const &) override {
+        transit<ReallyClearAppKey>();
+    }
 
     virtual void exit() {
     }

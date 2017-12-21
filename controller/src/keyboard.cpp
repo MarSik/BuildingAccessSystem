@@ -1,7 +1,3 @@
-//
-// Created by msivak on 15.12.17.
-//
-
 #include <logging.h>
 #include <MFRC522Common.h>
 #include <Time.h>
@@ -211,6 +207,12 @@ void OnCommandReceived(bool b_PasswordValid)
             return;
         }
 
+        if (strncasecmp(gs8_CommandBuffer, "CLEARKEY!", 9) == 0)
+        {
+            AccessSystem::dispatch(ClearAppKeyRequest{});
+            return;
+        }
+
         if (strcasecmp(gs8_CommandBuffer, "LIST") == 0)
         {
             // TODO list black and whitelists
@@ -234,11 +236,12 @@ void OnCommandReceived(bool b_PasswordValid)
         // else: The user pressed only ENTER
 
         Utils::Print("Usage:\r\n");
-        Utils::Print(" KEY    {key}   : Set the application key\r\n");
-        Utils::Print(" CLEAR          : Clear all users and their cards from the EEPROM\r\n");
-        Utils::Print(" ADD            : Add a user and his card to the EEPROM\r\n");
-        Utils::Print(" DEL    {user}  : Delete a user and his card from the EEPROM\r\n");
-        Utils::Print(" LIST           : List all users that are stored in the EEPROM\r\n");
+        Utils::Print(" KEY    {key}   : Set the master application key\r\n");
+        Utils::Print(" CLEARKEY!      : Clear the master application key\r\n");
+        Utils::Print(" TESTAUTH       : Check if card is valid, but do not open the door\r\n");
+        Utils::Print(" CLEAR          : Clear all whitelists and blacklists\r\n");
+        Utils::Print(" ADD            : Add keys and door permit to the card\r\n");
+        Utils::Print(" LIST           : List whitelists and blacklists\r\n");
         Utils::Print(" RESTORE        : Removes the master key and the application from the card\r\n");
     }
     else // !gb_InitSuccess

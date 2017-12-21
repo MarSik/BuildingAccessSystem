@@ -158,9 +158,62 @@ void InitReader(bool b_ShowError)
 // Store key to EEPROM
 void SetKey(const char* key)
 {
-  Utils::Print("New master key recorded!", LF);
-  Utils::Print(key, LF);
-  // TODO
+    if (strlen(key) != 32) {
+        Utils::Print("Wrong key length! The key must be 32 HEX chars long (16B)", LF);
+        return;
+    }
+
+    byte newKey[16] = {0,};
+    for (uint8_t idx = 0; idx < 32; idx++) {
+        byte val;
+        switch (key[idx]) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                val = key[idx] - '0';
+                break;
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+                val = 0xa + key[idx] - 'a';
+                break;
+
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+                val = 0xa + key[idx] - 'A';
+                break;
+
+            default:
+                Serial.print("Invalid hex character ");
+                Serial.write(key[idx]);
+                Serial.print(" at index ");
+                Serial.write(idx);
+                Serial.print("!\r\n");
+                return;
+        }
+
+        if (idx % 2 == 0) { // high nibble first
+            val <<= 4;
+        }
+
+        newKey[idx >> 1] |= val;
+    }
+
+    setApplicationKey(newKey);
 }
 
 volatile bool _buzzerActivated = false;
@@ -208,7 +261,9 @@ void setup()
     // Open USB serial port
     Serial.setBufferSize(64, 64);
     Serial.begin(115200);
-    Utils::Print("System initializing\n");
+    Utils::Print("System initializing\r\n");
+
+    loadApplicationKeyFromEEPROM();
 
     // Use 12 bit resolution for the analog input (ADC)
     analogReadResolution(ANALOG_RESOLUTION);
