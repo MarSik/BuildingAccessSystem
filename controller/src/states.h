@@ -162,8 +162,7 @@ class ShellTestCard : public WaitForCard {
     }
 
     void cardFound(uint64_t &uid) override {
-        // TODO compute per-card key from app key and uid
-        if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+        if (cardManager.authenticate()) {
             Utils::Print("Authentication to card succeeded", LF);
         } else {
             Utils::Print("Authentication to card failed", LF);
@@ -179,7 +178,8 @@ class RestoreCard : public WaitForCard {
 
     void cardFound(uint64_t &uid) override {
         // TODO compute per-card key from app key and uid
-        if (mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) {
+        if (cardManager.authenticate()) {
+            mfrc522.PCD_AntennaOff();
             Utils::Print("Authentication to card succeeded", LF);
         } else {
             Utils::Print("Authentication to card failed", LF);
@@ -199,6 +199,7 @@ class PersonalizeCard : public WaitForCard {
 
     void cardFound(uint64_t &uid) override {
         if (cardManager.personalize_card()) {
+            mfrc522.PCD_AntennaOff();
             Utils::Print("Card configured for access", LF);
         } else {
             Utils::Print("Card configuration failed", LF);
@@ -340,12 +341,9 @@ public:
 		// Halt all cards that do not match and try again
         // Also stop checking if the same card is read twice
 		while (ReadCard(&uid) && uid != lastUid) {
-            lastUid = uid;
 			cardPresent = true;
 
-            // TODO compute per-card key from app key and uid
-
-			if (!mfrc522.UltralightC_Authenticate(APPLICATION_KEY)) // e.g. Error while authenticating with master key
+            if (!cardManager.authenticate()) // e.g. Error while authenticating with master key
 			{
 				mfrc522.PICC_HaltA();
 				Utils::Print("Card authentication failed!", LF);
@@ -354,18 +352,7 @@ public:
 				Utils::Print("Card successfully authenticated!", LF);
 			}
 
-			const CardInfo &signature = cardManager.read_signature();
-			if (!signature.valid) {
-				mfrc522.PICC_HaltA();
-				Utils::Print("Card not configured for this application.", LF);
-				continue;
-			}
-
-			if (signature.special_app & CardInfo::ACCESS_BT) {
-				// TODO Enable bluetooth pairing until timeout
-			}
-
-			AccessRule rule;
+            AccessRule rule;
 			if (!cardManager.get_rule(DOOR_ID, rule)) {
 				mfrc522.PICC_HaltA();
 				Utils::Print("Door rule not accessible.", LF);
@@ -386,7 +373,8 @@ public:
 				continue;
 			}
 
-			cardGood = true;
+            lastUid = uid;
+            cardGood = true;
             break;
 		}
 

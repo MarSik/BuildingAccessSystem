@@ -1,13 +1,13 @@
 #ifndef CARDMANAGER_H
 #define CARDMANAGER_H
 
+#include "Secrets.h"
 #include <Arduino.h>
 #undef min
 #undef max
 
 #include <array.h>
 #include <MFRC522Ultralight.h>
-#include "Secrets.h"
 
 enum DefaultRule {
     CLOSED_BY_DEFAULT = 0,
@@ -72,6 +72,7 @@ public:
      */
     bool personalize_card() const;
     bool reset_card() const;
+    bool authenticate() const;
 
     /**
      * @brief set_rule changes the rule for the resource that is stored on the card
@@ -124,25 +125,66 @@ private:
     MFRC522Ultralight<Pcd> &pcd;
 };
 
+template<typename Pcd>
+bool CardManager<Pcd>::authenticate() const {
+    byte cardId[18];
+    byte cardIdLen = 18;
+    if (pcd.MIFARE_Read(0, cardId, &cardIdLen) != STATUS_OK)
+    {
+        RootLogger.write(DEBUG, "Could not get card header!\r\n");
+        return false;
+    }
+
+    const CardInfo &signature = read_signature();
+    if (!signature.valid) {
+        RootLogger.write(DEBUG, "Invalid card signature!\r\n");
+        return false;
+    }
+
+    // use last two bytes of cardId for flat + cardno
+    cardId[16] = signature.flat;
+    cardId[17] = signature.cardno;
+    personalizeKey(cardId, cardId + 16, cardId);
+    RootLogger.write(DEBUG, "Expected key: ");
+    RootLogger.println(DEBUG, cardId, 16, HEX);
+
+    if (!pcd.UltralightC_Authenticate(cardId)) // e.g. Error while authenticating with master key
+    {
+        RootLogger.write(DEBUG, "Card key does not match!\r\n");
+        return false;
+    }
+
+    return true;
+}
+
 template <typename Pcd>
 bool CardManager<Pcd>::personalize_card() const
 {
     // Allow access, no conditions
     const byte buff[4] = {0xFF, 0xFF, 0x00, 0x0a ^ 0x05};
+    byte header[18];
+    byte headerLen = 18;
+    pcd.MIFARE_Read(0, header, &headerLen);
 
     pcd.MIFARE_Ultralight_Write(APPID_PAGE, (const byte*)&APPID, 4);
 
     pcd.UltralightC_SetAuthProtection(0x3);
 
-    // TODO compute per-card key from app key and uid
-    pcd.UltralightC_ChangeKey(APPLICATION_KEY);
+    const byte special[4] = {0x18, 0x01, 0x80, 0x00};
+
+    // Compute per-card key from app key and uid
+    personalizeKey(header, special, header);
+
+    RootLogger.write(DEBUG, "New key: ");
+    RootLogger.println(DEBUG, header, 16, HEX);
+
+    pcd.UltralightC_ChangeKey(header);
 
     pcd.MIFARE_Ultralight_Write(DOORS[0], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[1], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[2], buff, 4);
     pcd.MIFARE_Ultralight_Write(DOORS[3], buff, 4);
 
-    const byte special[4] = {0x18, 0x01, 0x80, 0x00};
     pcd.MIFARE_Ultralight_Write(FLAT_ID_PAGE, special, 4);
 
     return true; // TODO

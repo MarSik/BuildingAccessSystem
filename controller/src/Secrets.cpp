@@ -1,5 +1,10 @@
 #include <Arduino.h>
+#undef max
+#undef min
+
 #include <driverlib/eeprom.h>
+#include <sha256.h>
+#include <array>
 #include "Secrets.h"
 
 // This reader is used to open door group no. 1
@@ -56,4 +61,16 @@ void clearApplicationKey() {
     } else {
         Serial.write("Failed to clear the application key.\r\n");
     }
+}
+
+void personalizeKey(const byte cardid[8], const byte flat[2], byte key[16]) {
+    std::array<byte, 32> buffer;
+    buffer.fill(0);
+    memcpy(&buffer.at(0), APPLICATION_KEY, 16);
+    memcpy(&buffer.at(16), cardid, 8);
+    memcpy(&buffer.at(24), &APPLICATION_ID, 4);
+    memcpy(&buffer.at(28), flat, 2);
+
+    mbedtls_sha256(buffer.data(), 32, buffer.data(), 0);
+    memcpy(key, buffer.data(), 16);
 }

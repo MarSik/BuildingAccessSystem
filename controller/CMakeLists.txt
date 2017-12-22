@@ -5,7 +5,7 @@ PROJECT(project)
 # Set used CPU and source list
 SET(CPU cortex-m4)
 SET(F_CPU 80000000)
-SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/countdown.h src/keyboard.cpp src/keyboard.h src/hal.cpp src/hal.h)
+SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/keyboard.cpp src/hal.cpp)
 
 # Precompile Arduino framework
 FIND_PACKAGE(Arduino COMPONENTS tivac EK-TM4C123GXL)
@@ -18,7 +18,7 @@ SET(TOOLCHAIN_SOURCES "")
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE ${Arduino_INCLUDE_DIRS} "src/include")
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${Arduino_LIBRARIES})
-TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE ${Arduino_COMPILE_FLAGS} -DF_CPU=${F_CPU})
+TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE ${Arduino_COMPILE_FLAGS} -DF_CPU=${F_CPU} -DBOOST_NO_EXCEPTIONS -DBOOST_EXCEPTION_DISABLE -DBOOST_NO_RTTI -DBOOST_NO_TYPEID)
 
 USE(SPI ${PROJECT_NAME} ${Arduino_LIBRARY_DIR})
 USE(Time ${PROJECT_NAME})
@@ -29,6 +29,7 @@ USE(RC522 ${PROJECT_NAME})
 USE(embdlog ${PROJECT_NAME})
 USE(etl ${PROJECT_NAME})
 USE("tinyfsm-0.2.0" ${PROJECT_NAME})
+USE(sha256 ${PROJECT_NAME})
 
 # Project specific toolchain initialization
 INCLUDE(${TOOLCHAIN_INIT})
