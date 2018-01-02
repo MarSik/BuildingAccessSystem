@@ -163,15 +163,15 @@ F 3 "" H 3600 2750 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5400 1400 6300 1400
+	5400 1400 5650 1400
 Wire Wire Line
-	5650 1200 5650 1450
+	5650 1200 5650 1400
 Wire Wire Line
-	5400 1800 6300 1800
+	5400 1800 5650 1800
 Wire Wire Line
-	5650 1750 5650 2100
+	5650 1750 5650 1800
 Wire Wire Line
-	2850 2050 4200 2050
+	2850 2050 2950 2050
 Connection ~ 5650 1400
 Connection ~ 5650 1800
 Wire Wire Line
@@ -179,7 +179,7 @@ Wire Wire Line
 Wire Wire Line
 	6300 1800 6300 1750
 Wire Wire Line
-	1950 2050 2450 2050
+	1950 2050 2050 2050
 Wire Wire Line
 	2850 1950 2950 1950
 Wire Wire Line
@@ -199,7 +199,7 @@ Wire Wire Line
 Wire Wire Line
 	1500 2200 1500 2050
 Wire Wire Line
-	4200 1400 4200 2600
+	4200 1400 4200 2050
 Wire Wire Line
 	4200 1400 4600 1400
 Connection ~ 4200 2050
@@ -214,9 +214,9 @@ Wire Wire Line
 Wire Wire Line
 	6300 3450 6300 2950
 Wire Wire Line
-	10250 1200 5650 1200
+	10250 1200 8550 1200
 Wire Wire Line
-	3050 3450 10250 3450
+	3050 3450 3250 3450
 Connection ~ 5650 3450
 Wire Wire Line
 	5650 2100 6750 2100
@@ -228,7 +228,7 @@ Connection ~ 2050 2050
 Wire Wire Line
 	3050 2450 3050 3450
 Wire Wire Line
-	1500 2450 3050 2450
+	1500 2450 2050 2450
 Connection ~ 4450 3450
 Connection ~ 6300 3450
 Wire Wire Line
@@ -238,7 +238,7 @@ Connection ~ 6300 2600
 Wire Wire Line
 	4200 2600 4600 2600
 Wire Wire Line
-	5400 2600 7000 2600
+	5400 2600 5650 2600
 Wire Wire Line
 	4600 3000 4500 3000
 Wire Wire Line
@@ -308,12 +308,12 @@ $EndComp
 Wire Wire Line
 	8300 2150 8000 2150
 Wire Wire Line
-	8000 2100 8000 2200
+	8000 2100 8000 2150
 Connection ~ 8000 2150
 Wire Wire Line
 	8000 2500 8000 2800
 Wire Wire Line
-	8000 2800 9350 2800
+	8000 2800 8550 2800
 Wire Wire Line
 	9000 2800 9000 2650
 Wire Wire Line
@@ -332,14 +332,14 @@ Connection ~ 8900 2800
 Wire Wire Line
 	8000 1800 8000 1350
 Wire Wire Line
-	8000 1350 9850 1350
+	8000 1350 8550 1350
 Wire Wire Line
 	8900 1450 8900 1350
 Connection ~ 8900 1350
 Wire Wire Line
-	8900 1750 8900 1850
+	8900 1750 8900 1800
 Wire Wire Line
-	8900 1800 9550 1800
+	8900 1800 9350 1800
 Connection ~ 8900 1800
 Wire Wire Line
 	8550 1350 8550 1200
@@ -366,4 +366,70 @@ Wire Wire Line
 Connection ~ 9000 2800
 Text Notes 9900 2350 0    60   ~ 0
 Triak, MT1 nahoře\nnapř. Z0103MA 5AL2
+Wire Wire Line
+	5650 1400 6300 1400
+Wire Wire Line
+	5650 1400 5650 1450
+Wire Wire Line
+	5650 1800 6300 1800
+Wire Wire Line
+	5650 1800 5650 2100
+Wire Wire Line
+	2950 2050 3250 2050
+Wire Wire Line
+	2650 2450 3050 2450
+Wire Wire Line
+	4200 2050 4200 2600
+Wire Wire Line
+	5650 3450 6300 3450
+Wire Wire Line
+	6750 3450 8550 3450
+Wire Wire Line
+	2050 2450 2650 2450
+Wire Wire Line
+	2050 2050 2450 2050
+Wire Wire Line
+	4450 3450 4500 3450
+Wire Wire Line
+	6300 3450 6750 3450
+Wire Wire Line
+	5650 2600 6300 2600
+Wire Wire Line
+	6300 2600 7000 2600
+Wire Wire Line
+	4500 3450 5500 3450
+Wire Wire Line
+	5500 3450 5650 3450
+Wire Wire Line
+	3250 2050 3600 2050
+Wire Wire Line
+	3250 3450 3600 3450
+Wire Wire Line
+	3600 2050 4200 2050
+Wire Wire Line
+	3600 3450 4450 3450
+Wire Wire Line
+	8000 2150 8000 2200
+Wire Wire Line
+	8550 3450 10250 3450
+Wire Wire Line
+	8550 2800 8700 2800
+Wire Wire Line
+	8700 2800 8800 2800
+Wire Wire Line
+	8800 2800 8900 2800
+Wire Wire Line
+	8900 2800 9000 2800
+Wire Wire Line
+	8900 1350 9850 1350
+Wire Wire Line
+	8900 1800 8900 1850
+Wire Wire Line
+	8550 1200 5650 1200
+Wire Wire Line
+	8550 1350 8900 1350
+Wire Wire Line
+	9350 1800 9550 1800
+Wire Wire Line
+	9000 2800 9350 2800
 $EndSCHEMATC
