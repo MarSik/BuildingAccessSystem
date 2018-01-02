@@ -1,13 +1,20 @@
+#include <Arduino.h>
+#undef min
+#undef max
+
 #include <logging.h>
 #include <MFRC522Common.h>
 #include <Time.h>
+
+#include <vector.h>
+#include <cstring.h>
 #include "config.h"
 #include "keyboard.h"
 #include "Utils.h"
 #include "states.h"
+#include "bluetooth.h"
 
-char       gs8_CommandBuffer[500];  // Stores commands typed by the user via Terminal and the password
-uint32_t   gu32_CommandPos = 0;     // Index in gs8_CommandBuffer
+etl::string<128> gs8_CommandBuffer;  // Stores commands typed by the user via Terminal and the password
 uint64_t   gu64_LastPasswd = 0;     // Timestamp when the user has enetered the password successfully
 
 // Temporary prototypes
@@ -41,15 +48,16 @@ bool ReadKeyboardInput()
         if (u8_Char == '\r' || u8_Char == '\n')
         {
             OnCommandReceived(b_PasswordValid);
+            gs8_CommandBuffer.clear();
             Utils::Print("\r\n> ");
             continue;
         }
 
         if (u8_Char == 8) // backslash
         {
-            if (gu32_CommandPos > 0)
+            if (!gs8_CommandBuffer.empty())
             {
-                gu32_CommandPos --;
+                gs8_CommandBuffer.pop_back();
                 Utils::Print(s8_Echo); // Terminal Echo
             }
             continue;
@@ -63,13 +71,13 @@ bool ReadKeyboardInput()
         if (b_PasswordValid) Utils::Print(s8_Echo);
         else                 Utils::Print("*"); // don't display the password chars in the Terminal
 
-        if (gu32_CommandPos >= sizeof(gs8_CommandBuffer))
+        if (gs8_CommandBuffer.available() == 0)
         {
             Utils::Print("ERROR: Command too long\r\n");
-            gu32_CommandPos = 0;
+            gs8_CommandBuffer.clear();
         }
 
-        gs8_CommandBuffer[gu32_CommandPos++] = u8_Char;
+        gs8_CommandBuffer.push_back(u8_Char);
     }
     return b_KeyPress;
 }
@@ -120,13 +128,12 @@ void OnCommandReceived(bool b_PasswordValid)
 {
     char* s8_Parameter;
 
-    gs8_CommandBuffer[gu32_CommandPos++] = 0;
-    gu32_CommandPos = 0;
+    gs8_CommandBuffer.push_back(0);
     Utils::Print(LF);
 
     if (!b_PasswordValid)
     {
-        b_PasswordValid = strcmp(gs8_CommandBuffer, PASSWORD) == 0;
+        b_PasswordValid = strcmp(gs8_CommandBuffer.data(), PASSWORD) == 0;
         if (!b_PasswordValid)
         {
             Utils::Print("Invalid password.\r\n");
@@ -142,9 +149,9 @@ void OnCommandReceived(bool b_PasswordValid)
     gu64_LastPasswd = Utils::GetMillis64() + PASSWORD_OFFSET_MS;
 
     // This command must work even if gb_InitSuccess == false
-    if (strncasecmp(gs8_CommandBuffer, "DEBUG", 5) == 0)
+    if (strncasecmp(gs8_CommandBuffer.data(), "DEBUG", 5) == 0)
     {
-        if (!ParseParameter(gs8_CommandBuffer + 5, &s8_Parameter, 1, 1))
+        if (!ParseParameter(&gs8_CommandBuffer.at(5), &s8_Parameter, 1, 1))
             return;
 
         if (s8_Parameter[0] < '0' || s8_Parameter[0] > '3')
@@ -166,7 +173,7 @@ void OnCommandReceived(bool b_PasswordValid)
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (strcasecmp(gs8_CommandBuffer, "RESET") == 0)
+    if (strcasecmp(gs8_CommandBuffer.data(), "RESET") == 0)
     {
         InitReader(false);
         if (gb_InitSuccess)
@@ -177,14 +184,60 @@ void OnCommandReceived(bool b_PasswordValid)
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (strcasecmp(gs8_CommandBuffer, "TESTAUTH") == 0)
+    if (strcasecmp(gs8_CommandBuffer.data(), "TESTAUTH") == 0)
     {
         AccessSystem::dispatch(TestCard{});
         return;
     }
 
     // This command must work even if gb_InitSuccess == false
-    if (PASSWORD[0] != 0 && strcasecmp(gs8_CommandBuffer, "EXIT") == 0)
+    if (strcasecmp(gs8_CommandBuffer.data(), "BTOFF") == 0)
+    {
+        BluetoothSerial.end();
+        return;
+    }
+
+    // This command must work even if gb_InitSuccess == false
+    if (strcasecmp(gs8_CommandBuffer.data(), "BTINIT") == 0)
+    {
+        BluetoothSerial.configure();
+        return;
+    }
+
+    // This command must work even if gb_InitSuccess == false
+    if (strcasecmp(gs8_CommandBuffer.data(), "BTON") == 0)
+    {
+        BluetoothSerial.begin();
+        return;
+    }
+
+    // This command must work even if gb_InitSuccess == false
+    if (strcasecmp(gs8_CommandBuffer.data(), "BTAT0") == 0)
+    {
+        BluetoothSerial.comm();
+        return;
+    }
+
+    // This command must work even if gb_InitSuccess == false
+    if (strcasecmp(gs8_CommandBuffer.data(), "BTAT1") == 0)
+    {
+        BluetoothSerial.at();
+        return;
+    }
+
+    // Forward bluetooth command
+    if (strncasecmp(gs8_CommandBuffer.data(), "BT ", 3) == 0)
+    {
+        Serial.print("Sending BT: ");
+        Serial.println(&gs8_CommandBuffer.at(3));
+        BluetoothSerial.serial().print(&gs8_CommandBuffer.at(3));
+        BluetoothSerial.serial().print("\r\n");
+        BluetoothSerial.serial().flush();
+        return;
+    }
+
+    // This command must work even if gb_InitSuccess == false
+    if (PASSWORD[0] != 0 && strcasecmp(gs8_CommandBuffer.data(), "EXIT") == 0)
     {
         gu64_LastPasswd = 0;
         Utils::Print("You have logged out.\r\n");
@@ -193,45 +246,45 @@ void OnCommandReceived(bool b_PasswordValid)
 
     if (gb_InitSuccess)
     {
-        if (strcasecmp(gs8_CommandBuffer, "CLEAR") == 0)
+        if (strcasecmp(gs8_CommandBuffer.data(), "CLEAR") == 0)
         {
             return;
         }
 
-        if (strncasecmp(gs8_CommandBuffer, "KEY", 3) == 0)
+        if (strncasecmp(gs8_CommandBuffer.data(), "KEY", 3) == 0)
         {
-            if (!ParseParameter(gs8_CommandBuffer + 3, &s8_Parameter, 32, 32))
+            if (!ParseParameter(&gs8_CommandBuffer.at(3), &s8_Parameter, 32, 32))
                 return;
 
             SetKey(s8_Parameter);
             return;
         }
 
-        if (strncasecmp(gs8_CommandBuffer, "CLEARKEY!", 9) == 0)
+        if (strncasecmp(gs8_CommandBuffer.data(), "CLEARKEY!", 9) == 0)
         {
             AccessSystem::dispatch(ClearAppKeyRequest{});
             return;
         }
 
-        if (strcasecmp(gs8_CommandBuffer, "LIST") == 0)
+        if (strcasecmp(gs8_CommandBuffer.data(), "LIST") == 0)
         {
             // TODO list black and whitelists
             return;
         }
 
-        if (strcasecmp(gs8_CommandBuffer, "RESTORE") == 0)
+        if (strcasecmp(gs8_CommandBuffer.data(), "RESTORE") == 0)
         {
             AccessSystem::dispatch(ClearCard{});
             return;
         }
 
-        if (strncasecmp(gs8_CommandBuffer, "ADD", 3) == 0)
+        if (strncasecmp(gs8_CommandBuffer.data(), "ADD", 3) == 0)
         {
             AccessSystem::dispatch(AddCard{});
             return;
         }
 
-        if (strlen(gs8_CommandBuffer))
+        if (!gs8_CommandBuffer.empty())
             Utils::Print("Invalid command.\r\n\r\n");
         // else: The user pressed only ENTER
 

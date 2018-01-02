@@ -16,6 +16,9 @@
 #undef min
 #undef max
 
+#include <vector.h>
+
+
 #include "SPI.h"
 #include "DCF77.h"
 #include "Time.h"
@@ -247,19 +250,24 @@ void setup()
 
     Utils::SetPinMode(BT_RESET, OUTPUT);
     Utils::WritePin(BT_RESET, LOW);
+    Utils::SetPinMode(BT_AT, OUTPUT);
+    Utils::WritePin(BT_AT, HIGH);
 
     // Configure open drain outputs with 8mA current
     _prepareHighCurrentODOutputGPIO(READER_ON);
     _prepareHighCurrentODOutputGPIO(READER_TX);
 
     // Enable DCF receiver
-    DCF.Start();
+    // TODO XXX DCF.Start();
 
     // Enable buzzer pass through
     attachInterrupt(BUZZ_SENSE, handleBuzzer, CHANGE);
 
-    // Open USB serial port
+    // Limit serial buffers
     Serial.setBufferSize(64, 64);
+    Serial3.setBufferSize(64, 64);
+
+    // Open USB serial port
     Serial.begin(115200);
     Utils::Print("System initializing\r\n");
 
@@ -286,11 +294,24 @@ void _prepareHighCurrentODOutputGPIO(const uint8_t arduinoPort) {
     ROM_GPIODirModeSet(portBase, bit, GPIO_DIR_MODE_OUT);
 }
 
+etl::vector<char, 64> btbuffer;
+
 void loop()
 {
     bool b_KeyPress  = Serial.available() > 0;
     bool b_VoltageOK = CheckBattery();
 
+    /* Echo bluetooth serial
+    while (Serial3.available() > 0) {
+        int value = Serial3.read();
+        btbuffer.push_back(value);
+        if (value == '\n') {
+            btbuffer.push_back(0);
+            Serial.print(btbuffer.data());
+            btbuffer.clear();
+        }
+    }*/
+    
     // Countdown finished state machine transition
     if (countdownFinished()) {
         AccessSystem::dispatch(CountdownFinished{});

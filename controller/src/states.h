@@ -179,7 +179,6 @@ class RestoreCard : public WaitForCard {
     void cardFound(uint64_t &uid) override {
         // TODO compute per-card key from app key and uid
         if (cardManager.authenticate()) {
-            mfrc522.PCD_AntennaOff();
             Utils::Print("Authentication to card succeeded", LF);
         } else {
             Utils::Print("Authentication to card failed", LF);
@@ -188,6 +187,7 @@ class RestoreCard : public WaitForCard {
         if (cardManager.reset_card()) Utils::Print("Restore success\r\n");
         else                          Utils::Print("Restore failed\r\n");
 
+        mfrc522.PCD_AntennaOff();
         transit<ShellInUse>();
     }
 };

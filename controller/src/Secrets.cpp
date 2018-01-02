@@ -71,6 +71,9 @@ void personalizeKey(const byte cardid[8], const byte flat[2], byte key[16]) {
     memcpy(&buffer.at(24), &APPLICATION_ID, 4);
     memcpy(&buffer.at(28), flat, 2);
 
+    // Double hash to make it complicated to find the application key
+    // even when the plain text is "almost" known
+    mbedtls_sha256(buffer.data(), 32, buffer.data(), 0);
     mbedtls_sha256(buffer.data(), 32, buffer.data(), 0);
     memcpy(key, buffer.data(), 16);
 }
