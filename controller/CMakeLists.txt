@@ -5,7 +5,7 @@ PROJECT(project)
 # Set used CPU and source list
 SET(CPU cortex-m4)
 SET(F_CPU 80000000)
-SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/keyboard.cpp src/hal.cpp src/bluetooth.cpp src/bluetooth.h)
+SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanager.cpp src/states.cpp src/countdown.cpp src/keyboard.cpp src/hal.cpp src/bluetooth.cpp src/ssp.c)
 
 # Precompile Arduino framework
 FIND_PACKAGE(Arduino COMPONENTS tivac EK-TM4C123GXL)
@@ -18,7 +18,7 @@ SET(TOOLCHAIN_SOURCES "")
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE ${Arduino_INCLUDE_DIRS} "src/include")
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${Arduino_LIBRARIES})
-TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE ${Arduino_COMPILE_FLAGS} -DF_CPU=${F_CPU} -DBOOST_NO_EXCEPTIONS -DBOOST_EXCEPTION_DISABLE -DBOOST_NO_RTTI -DBOOST_NO_TYPEID)
+TARGET_COMPILE_OPTIONS(${PROJECT_NAME} PRIVATE ${Arduino_COMPILE_FLAGS} -DF_CPU=${F_CPU} -DBOOST_NO_EXCEPTIONS -DBOOST_EXCEPTION_DISABLE -DBOOST_NO_RTTI -DBOOST_NO_TYPEID -fstack-protector-strong)
 
 USE(SPI ${PROJECT_NAME} ${Arduino_LIBRARY_DIR})
 USE(Time ${PROJECT_NAME})
