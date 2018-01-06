@@ -27,7 +27,7 @@ void BluetoothSerialClass::begin() const {
 
 void BluetoothSerialClass::end() const {
     off();
-    //btSerial.end();
+    btSerial.end();
     dropdata();
 }
 
@@ -44,7 +44,7 @@ HardwareSerial& BluetoothSerialClass::serial() const {
 }
 
 void BluetoothSerialClass::on() const {
-    digitalWrite(BT_RESET, HIGH);
+    // TODO XXX digitalWrite(BT_RESET, HIGH);
 }
 
 void BluetoothSerialClass::off() const {
