@@ -9,6 +9,7 @@ SET(SOURCES src/DoorOpenerSketch.cpp src/Secrets.cpp src/Utils.cpp src/cardmanag
 
 # Precompile Arduino framework
 FIND_PACKAGE(Arduino COMPONENTS tivac EK-TM4C123GXL)
+TARGET_COMPILE_OPTIONS(Arduino PRIVATE -fstack-protector-strong)
 
 # Use Arduino provided linker and startup script
 SET("${PROJECT_NAME}_LINKER_SCRIPT" "${Arduino_LINKER_SCRIPT}")

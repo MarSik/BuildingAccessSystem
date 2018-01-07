@@ -64,7 +64,7 @@ bool CheckBattery()
     if (u32_Volt > 136)
         Utils::WritePin(CHARGE_PIN, LOW); // Stop charging
 
-    if (u32_Volt < 136)
+    if (u32_Volt < 134)
         Utils::WritePin(CHARGE_PIN, HIGH); // Start charging
 
     return (u32_Volt >= 130 && u32_Volt < 140);
@@ -258,7 +258,7 @@ void setup()
     _prepareHighCurrentODOutputGPIO(READER_TX);
 
     // Enable DCF receiver
-    // TODO XXX DCF.Start();
+    DCF.Start();
 
     // Enable buzzer pass through
     attachInterrupt(BUZZ_SENSE, handleBuzzer, CHANGE);
@@ -340,7 +340,7 @@ void loop()
         AccessSystem::dispatch(DCFReceived{});
     }
 
-    // Sleep until something happens
+    /* Sleep until something happens */
     asm volatile ("wfi              \n"\
      		      "mov r0, #0       \n");  // force bx lr to not start until after clocks back on
 }

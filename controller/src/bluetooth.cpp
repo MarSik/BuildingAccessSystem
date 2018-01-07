@@ -7,20 +7,20 @@ constexpr HardwareSerial &btSerial = Serial3;
 void BluetoothSerialClass::configure() const {
     at();
     on();
-    sleep(250);
+    delay(250);
     btSerial.begin(38400);
     dropdata();
     btSerial.println("AT+NAME=Opalkova18");
     btSerial.println("AT+PSWD=8642");
     btSerial.flush();
-    sleep(100);
+    delay(100);
     end();
 }
 
 void BluetoothSerialClass::begin() const {
     comm();
     on();
-    sleep(250);
+    delay(250);
     btSerial.begin(9600);
     dropdata();
 }
@@ -44,7 +44,7 @@ HardwareSerial& BluetoothSerialClass::serial() const {
 }
 
 void BluetoothSerialClass::on() const {
-    // TODO XXX digitalWrite(BT_RESET, HIGH);
+    digitalWrite(BT_RESET, HIGH);
 }
 
 void BluetoothSerialClass::off() const {
