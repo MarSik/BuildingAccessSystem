@@ -59,7 +59,7 @@
 #define LED_RED_PIN      RED_LED
 
 // This Arduino / Teensy pin is connected to the voltage divider that measures the 13,6V battery voltage
-#define VOLTAGE_MEASURE_PIN  A3
+#define VOLTAGE_MEASURE_PIN  CHARGE_BATTERY_ADC
 
 // Use 12 bit resolution for the analog input (ADC)
 // The Teensy 3.x boards have a 12 bit ADC.
