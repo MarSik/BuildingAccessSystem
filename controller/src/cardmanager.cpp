@@ -6,7 +6,7 @@ bool AccessRule::check_crc() const {
 
 uint8_t AccessRule::compute_crc() const {
     uint8_t expected_crc = CHECKSUM_BASE;
-    uint8_t b = dow | (default_rule == DefaultRule::OPEN_BY_DEFAULT ? 0b10000000 : 0x00);
+    const uint8_t b = dow | (default_rule == DefaultRule::OPEN_BY_DEFAULT ? 0b10000000 : 0x00);
     expected_crc ^= b;
     expected_crc ^= hour;
     return (expected_crc & 0xf) ^ (expected_crc >> 4);

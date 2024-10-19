@@ -2,7 +2,6 @@
 #include "countdown.h"
 
 static volatile uint32_t _counter = 0;
-static volatile uint32_t _lastKnownMillis = 0;
 static volatile bool _countdownFinished = false;
 
 void _processCountdown(uint32_t _millis) {
